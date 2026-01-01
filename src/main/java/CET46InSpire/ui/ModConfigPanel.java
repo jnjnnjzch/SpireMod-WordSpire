@@ -5,6 +5,8 @@ import CET46InSpire.events.CallOfCETEvent.BookEnum;
 import CET46InSpire.helpers.BookConfig.LexiconEnum;
 import CET46InSpire.relics.QuizRelic;
 import basemod.*;
+import basemod.EasyConfigPanel.ConfigField.FieldSetter;
+
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.evacipated.cardcrawl.modthespire.lib.SpireConfig;
@@ -86,6 +88,7 @@ public class ModConfigPanel extends ModPanel {
     public static int maxAnsNum = 3;
     public static boolean loadJLPT = true;
     public static boolean loadCET = true;
+    public static boolean loadUSER_DICT = true;
 
     /**
      * 这个是遗物对应的词库权重
@@ -101,6 +104,7 @@ public class ModConfigPanel extends ModPanel {
         List<String> page2 = new ArrayList<>();     // 第二页不能用Arrays.asList 因为预计将修改其内容
         page2.add("loadCET");
         page2.add("loadJLPT");
+        page2.add("loadUSER_DICT");
         pages.add(page2);
 
         configPageNum = 2;
