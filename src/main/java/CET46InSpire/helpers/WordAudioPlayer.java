@@ -20,6 +20,11 @@ public class WordAudioPlayer {
         if (tmp != null && tmp.TEXT_DICT != null) {
             String audioFileName = tmp.TEXT_DICT.get("AUDIO");
             if (audioFileName != null && !audioFileName.isEmpty()) {
+                // 去除后缀
+                int dotIndex = audioFileName.lastIndexOf('.');
+                if (dotIndex > 0) { // 确保有后缀且不仅仅是个点
+                    audioFileName = audioFileName.substring(0, dotIndex);
+                }
                 play(audioFileName); 
             }
         }
