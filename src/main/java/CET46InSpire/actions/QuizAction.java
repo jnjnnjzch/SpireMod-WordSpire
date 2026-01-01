@@ -33,6 +33,7 @@ public abstract class QuizAction extends AbstractGameAction {
         if (this.duration == Settings.ACTION_DUR_FASTER) {
             QuizData quizData = quizRelic.buildQuizData(quizRelic.getFactory().fromRandom(lexicon));
             logger.info("quizData = {}", quizData);
+            CET46InSpire.helpers.WordAudioPlayer.playByWordId(quizData.getWordUiStringsId());
             BaseMod.openCustomScreen(QuizScreen.Enum.WORD_SCREEN, quizData.show, lexicon.name(),
                     quizData.correctOptions, quizData.allOptions, quizData.getWordUiStringsId(), false);
             tickDuration();
