@@ -32,15 +32,11 @@ public class UserDictRelic extends QuizRelic {
         return "User Dictionary: " + lexiconEnum.name();
     }
 
-    // 复用通用的出题逻辑 (和 TestCET 一样)
     @Override
     public QuizData buildQuizData(BuildQuizDataRequest request) {
         UIStrings tmp = CardCrawlGame.languagePack.getUIString(request.getTargetUiStringsId());
         String word = null;
         ArrayList<String> right_ans_list = new ArrayList<>();
-        if (tmp == null || tmp.TEXT == null) {
-            return null; // 防止空指针
-        }
         for (String item: tmp.TEXT) {
             if (word == null) {
                 word = item;
@@ -51,25 +47,37 @@ public class UserDictRelic extends QuizRelic {
         right_ans_list = ArrayListHelper.choose(right_ans_list, ModConfigPanel.maxAnsNum);
 
         ArrayList<String> meaning_list = new ArrayList<>();
+        // copy
         meaning_list.addAll(right_ans_list);
         int choice_num = 3 * right_ans_list.size();
+        // int choice_num = 3 * request.getMaxOptionNum();
         if (choice_num > request.getMaxOptionNum()) {
             choice_num = request.getMaxOptionNum();
         }
-        
-        int safeCounter = 0;
-        for (int i = meaning_list.size(); i < choice_num && safeCounter < 200;) {
-            safeCounter++;
+
+        // 插入 "WRONG_ANS" (指定干扰项)
+        if (tmp.TEXT_DICT != null) {
+            String wrongStr = tmp.TEXT_DICT.get("WRONG_ANS");
+            if (wrongStr != null && !wrongStr.isEmpty()) {
+                String[] wrongs = wrongStr.split("\\|");
+                for (String w : wrongs) {
+                    // 只有当选项还没满，且不重复时才添加
+                    if (meaning_list.size() < choice_num && !meaning_list.contains(w)) {
+                        meaning_list.add(w);
+                    }
+                }
+            }
+        }
+
+        for (int i = meaning_list.size(); i < choice_num;) {
             int target_word = MathUtils.random(0, request.getVocabularySize()- 1);
-            if (target_word == request.getTargetId()) {
+            if (target_word == request.targetId) {
                 continue;
             }
             tmp = CardCrawlGame.languagePack.getUIString(request.getUiStringsIdStart() + target_word);
-            if (tmp != null && tmp.TEXT.length > 1) {
-                int target_meaning = MathUtils.random(1, tmp.TEXT.length - 1);
-                meaning_list.add(tmp.TEXT[target_meaning]);
-                i++;
-            }
+            int target_meaning = MathUtils.random(1, tmp.TEXT.length - 1);
+            meaning_list.add(tmp.TEXT[target_meaning]);
+            i++;
         }
         Collections.shuffle(meaning_list);
         return new QuizData(request.getTargetId(), request.getTargetUiStringsId(), word, right_ans_list, meaning_list);
