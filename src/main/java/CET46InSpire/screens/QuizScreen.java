@@ -52,6 +52,8 @@ public class QuizScreen extends CustomScreen {
     private static final float BOTTOM_BUT_Y;
     private static final float TIP_X;
     private static final float TIP_Y;
+    private static final float REPLAY_X;
+    private static final float REPLAY_Y;
     private float delta_y = 0.0F;
     private String word;
     private String word_id;
@@ -64,6 +66,7 @@ public class QuizScreen extends CustomScreen {
     private boolean correction;
     private final CheckButton checkButton;
     private final ReturnButton returnButton;
+    private final ReplayButton replayButton;
     private final ArrayList<WordButton> wordButtons;
     private final InfoTip infoTip;
     public boolean ans_checked;
@@ -83,6 +86,8 @@ public class QuizScreen extends CustomScreen {
         this.returnButton.font_center = true;
         this.infoTip = new InfoTip(FRAME_X + TIP_X,FRAME_Y + TIP_Y);
         this.infoTip.attached = true;
+        this.replayButton = new ReplayButton(FRAME_X + REPLAY_X, FRAME_Y + REPLAY_Y); // 单词右边350像素
+        this.replayButton.attached = true; // 让它跟随面板一起滑动
         this.wordButtons = new ArrayList<>();
         for (int i = 0; i < WORD_COL_MAX * WORD_ROW_MAX; i ++) {
             int col = i % WORD_COL_MAX;
@@ -134,6 +139,8 @@ public class QuizScreen extends CustomScreen {
 
         this.infoTip.show("text");
         this.checkButton.show(TEXT[0]);
+        this.replayButton.show("重播"); 
+        this.replayButton.updateWord(this.word_id);
         for (WordButton w: this.wordButtons) {
             w.reset();
         }
@@ -201,6 +208,7 @@ public class QuizScreen extends CustomScreen {
             this.checkButton.attachedUpdate(FRAME_Y + BOTTOM_BUT_Y + this.delta_y);
         }
         this.infoTip.attachedUpdate(FRAME_Y + TIP_Y + this.delta_y);
+        this.replayButton.attachedUpdate(FRAME_Y + TIP_Y + this.delta_y);
         for (WordButton w: this.wordButtons) {
             if (!w.isHidden) {
                 w.attachedRelUpdate(FRAME_Y + this.delta_y);
@@ -324,6 +332,7 @@ public class QuizScreen extends CustomScreen {
         }
         this.renderQuestion(sb, font_color);
         this.infoTip.render(sb);
+        this.replayButton.render(sb, this.descFont);
         if (this.ans_checked) {
             FontHelper.renderFontLeft(sb, this.descFont, uiStrings.TEXT[2] + this.score,
                     SCORE_X, SCORE_Y + this.delta_y, font_color);
@@ -449,6 +458,8 @@ public class QuizScreen extends CustomScreen {
         BOTTOM_BUT_Y = 30.0F * Settings.yScale;
         TIP_X = 0.05F * FRAME_WIDTH;
         TIP_Y = 0.85F * FRAME_HEIGHT;
+        REPLAY_X = 0.70F * FRAME_WIDTH;
+        REPLAY_Y = 0.85F * FRAME_HEIGHT;
         WORD_COL_MAX = 3;
         WORD_ROW_MAX = 3;
     }
