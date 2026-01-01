@@ -30,10 +30,11 @@ public class TestCET extends QuizRelic {
         if (lexiconEnum == null) {
             return "NULL";
         }
-        switch (lexiconEnum) {
-            case CET4:
+        // 由于现在是一个新的lexiconEnum，它是一个类，我们应该遍历name
+        switch (lexiconEnum.name()) {
+            case "CET4":
                 return DESCRIPTIONS[0];
-            case CET6:
+            case "CET6":
                 return DESCRIPTIONS[1];
         }
         return "???";
