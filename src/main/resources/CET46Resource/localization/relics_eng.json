@@ -17,5 +17,12 @@
             "#yCET4 #yVersion NL Whenever you are about to play a card, send a random quiz of (main) #yCET4 . The effect is determined by the accuracy of your answer. NL Right-click on this relic to trigger a quiz of correction.",
             "#yCET6 #yVersion NL Whenever you are about to play a card, send a random quiz of (main) #yCET6 . The effect is determined by the accuracy of your answer. NL Right-click on this relic to trigger a quiz of correction."
         ]
-    }
+    },
+    "CET46:USER_DICT_relic": {
+        "NAME": "Book of External Words",
+        "FLAVOR": "Rumor has it that all the vocabulary mysteries of the 'Outside World'.",
+        "DESCRIPTIONS": [
+            "Quizzes are based on user-defined dictionaries. NL Right-click this relic to review incorrect answers."
+    ]
+  }
 }

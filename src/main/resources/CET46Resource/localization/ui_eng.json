@@ -26,7 +26,8 @@
             "showLexicon": "Show lexicon on quiz panel",
             "maxAnsNum": "Max number of right answer(s)",
             "loadCET": "Load CET lexicons (restart game to apply)",
-            "loadJLPT": "Load JLPT lexicons (restart game to apply)"
+            "loadJLPT": "Load JLPT lexicons (restart game to apply)",
+            "loadUSER_DICT": "Load Custom lexicons (restart game to apply)"
         }
     },
     "CET46:InfoTip": {

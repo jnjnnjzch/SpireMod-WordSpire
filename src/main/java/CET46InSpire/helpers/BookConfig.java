@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 public class BookConfig {
@@ -23,13 +24,9 @@ public class BookConfig {
     public List<LexiconEnum> lexicons;
     public Supplier<AbstractRelic> relicSupplier;
 
-    public BookConfig(BookEnum bookEnum, List lexicons, Supplier<AbstractRelic> relicSupplier) {
+    public BookConfig(BookEnum bookEnum, List<LexiconEnum> lexicons, Supplier<AbstractRelic> relicSupplier) {
         this.bookEnum = bookEnum;
-        // TODO 临时处理一下, 后续需要直接使用List<LexiconEnum>赋值
-        this.lexicons = new ArrayList<>();
-        for (Object var: lexicons) {
-            this.lexicons.add(LexiconEnum.valueOf(var.toString()));
-        }
+        this.lexicons = new ArrayList<>(lexicons); // 由于lexicons改为动态加载，因此直接传入，不用for循环
         this.relicSupplier = relicSupplier;
     }
 
@@ -60,28 +57,67 @@ public class BookConfig {
         logger.info("CET46Settings init called, VOCABULARY_MAP = {}", VOCABULARY_MAP);
     }
 
+    // 重写LexiconEnum，使之能动态读取外部词库
+    public static class LexiconEnum{
+        private final String id;
 
-    /**
-     * 这个是词库的
-     */
-    public enum LexiconEnum {
-        CET4,
-        CET6,
-        N5,
-        N4,
-        N3,
-        N2,
-        N1
+        // 构造函数
+        private LexiconEnum(String id){
+            this.id = id;
+        }
+
+        // 保留原有的词典
+        public static final LexiconEnum CET4 = new LexiconEnum("CET4");
+        public static final LexiconEnum CET6 = new LexiconEnum("CET6");
+        public static final LexiconEnum N5 = new LexiconEnum("N5");
+        public static final LexiconEnum N4 = new LexiconEnum("N4");
+        public static final LexiconEnum N3 = new LexiconEnum("N3");
+        public static final LexiconEnum N2 = new LexiconEnum("N2");
+        public static final LexiconEnum N1 = new LexiconEnum("N1");
+
+        // 读取外部文件的方法
+        public static LexiconEnum of(String id) {
+            return new LexiconEnum(id);
+        }
+        // 模拟Enum的name()方法
+        public String name() {
+            return id;
+        }
+
+        // 重写一些必要的函数
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            LexiconEnum that = (LexiconEnum) o;
+            return Objects.equals(id, that.id);
+        }
+        @Override
+        public int hashCode() {
+            return Objects.hash(id);
+        }
+        @Override
+        public String toString() {
+            return id;
+        }
+
+        public static LexiconEnum valueOf(String name) {
+            return getLexicon(name);
+        }
     }
 
     @Nullable
     public static LexiconEnum getLexicon(String lexicon) {
-        for (LexiconEnum l: LexiconEnum.values()) {
-            if (l.name().equalsIgnoreCase(lexicon)) {
-                return l;
-            }
-        }
-        return null;
+        if (lexicon.equalsIgnoreCase("CET4")) return LexiconEnum.CET4;
+        if (lexicon.equalsIgnoreCase("CET6")) return LexiconEnum.CET6;
+        if (lexicon.equalsIgnoreCase("N5")) return LexiconEnum.N5;
+        if (lexicon.equalsIgnoreCase("N4")) return LexiconEnum.N4;
+        if (lexicon.equalsIgnoreCase("N3")) return LexiconEnum.N3;
+        if (lexicon.equalsIgnoreCase("N2")) return LexiconEnum.N2;
+        if (lexicon.equalsIgnoreCase("N1")) return LexiconEnum.N1;
+
+        // 现在不返回null，而是允许扩展
+        return LexiconEnum.of(lexicon);
     }
 
 }

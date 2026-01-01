@@ -3,6 +3,7 @@ package CET46InSpire;
 import CET46InSpire.events.CallOfCETEvent.BookEnum;
 import CET46InSpire.helpers.QuizCommand;
 import CET46InSpire.relics.TestCET;
+import CET46InSpire.relics.UserDictRelic;
 import CET46InSpire.relics.JLPTRelic;
 import CET46InSpire.helpers.BookConfig;
 import CET46InSpire.helpers.BookConfig.LexiconEnum;
@@ -16,6 +17,7 @@ import basemod.interfaces.EditRelicsSubscriber;
 import basemod.interfaces.EditStringsSubscriber;
 import basemod.interfaces.PostInitializeSubscriber;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.evacipated.cardcrawl.modthespire.lib.SpireInitializer;
 import com.megacrit.cardcrawl.core.Settings;
@@ -29,6 +31,7 @@ import CET46InSpire.helpers.ImageElements;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.io.File; //不得不用io File来解决初始化问题
 
 @SpireInitializer
 public class CET46Initializer implements
@@ -39,6 +42,9 @@ public class CET46Initializer implements
     public static String MOD_ID = "CET46InSpire";  //MOD_ID必须与ModTheSpire.json中的一致
     public static String JSON_MOD_KEY = "CET46:";
     private ModPanel settingsPanel = null;
+    
+    // 外部词库的存放路径
+    public static final String USER_DICT_PATH = "mods/CET46InSpire/UserDictionaries/";
 
     /**
      * 所有可选范围
@@ -65,7 +71,42 @@ public class CET46Initializer implements
 //        allBooks.put(BookEnum.N3, new BookConfig(BookEnum.N3, Arrays.asList(BookEnum.N4), () -> new BookOfJlpt(BookEnum.N3, ImageElements.RELIC_N5_IMG)));
 //        allBooks.put(BookEnum.N2, new BookConfig(BookEnum.N2, Arrays.asList(BookEnum.N3), () -> new BookOfJlpt(BookEnum.N2, ImageElements.RELIC_N5_IMG)));
 //        allBooks.put(BookEnum.N1, new BookConfig(BookEnum.N1, Arrays.asList(BookEnum.N2), () -> new BookOfJlpt(BookEnum.N1, ImageElements.RELIC_N5_IMG)));
+        
+        // 加载用户自动的词库
+        initUserDictionaries();
     }
+
+    private static void initUserDictionaries() {
+        List<LexiconEnum> userLexicons = new ArrayList<>();
+        try {
+            // 使用  java.io.File读取游戏根目录下的文件
+            File dir = new File(USER_DICT_PATH);
+            if (dir.exists() && dir.isDirectory()) {
+                // 扫描所有 .json 文件
+                File[] files = dir.listFiles((d, name) -> name.endsWith(".json"));
+                if (files != null) {
+                    for (File file : files) {
+                        String fileName = file.getName();
+                        String name = fileName.substring(0, fileName.lastIndexOf('.'));                        
+                        userLexicons.add(LexiconEnum.of(name));
+                        logger.info("CET46InSpire: Found User Dictionary -> " + name);
+                    }
+                }
+            } else {
+                // 如果目录不存在，自动创建它，方便用户
+                dir.mkdirs();
+            }
+        } catch (Exception e) {
+            logger.error("CET46InSpire: Failed to scan user dictionaries", e);
+        }
+
+        // 注册 USER_DICT 书籍
+        if (!userLexicons.isEmpty()) {
+            allBooks.put(BookEnum.USER_DICT, new BookConfig(BookEnum.USER_DICT, 
+                    userLexicons, () -> new UserDictRelic())); // 新的自定义词库对应的遗物
+        }
+    }
+
     private static void initBooks() {
         CET46Initializer.allBooks.values().forEach(bookConfig -> {
             if (bookConfig.needNotLoad()) {
@@ -79,7 +120,10 @@ public class CET46Initializer implements
 //        ModConfigPanel.addRelicPage(BookEnum.CET4, Arrays.asList(LexiconEnum.CET4, LexiconEnum.CET6));
         ModConfigPanel.addRelicPage(BookEnum.CET, Arrays.asList(LexiconEnum.CET4, LexiconEnum.CET6));
         ModConfigPanel.addRelicPage(BookEnum.JLPT, Arrays.asList(LexiconEnum.N1, LexiconEnum.N2, LexiconEnum.N3, LexiconEnum.N4, LexiconEnum.N5));
-
+        // 为USER_DICT注册
+        if (allBooks.containsKey(BookEnum.USER_DICT)) {
+             ModConfigPanel.addRelicPage(BookEnum.USER_DICT, allBooks.get(BookEnum.USER_DICT).lexicons);
+        }
         logger.info("initBooks: userBooks = {}, needLoadBooks = {}.", userBooks.stream().map(it -> it.bookEnum).collect(Collectors.toList()), needLoadBooks);
     }
 
@@ -126,8 +170,32 @@ public class CET46Initializer implements
     public void loadVocabulary() {
         long startTime = System.currentTimeMillis();
 
+        // jar内部的词典定义
+        List<LexiconEnum> builtIn = Arrays.asList(
+            LexiconEnum.N1, LexiconEnum.N2, LexiconEnum.N3, LexiconEnum.N4, LexiconEnum.N5,
+            LexiconEnum.CET4, LexiconEnum.CET6
+            );
+
         needLoadBooks.forEach(lexiconEnum -> {
-            BaseMod.loadCustomStringsFile(UIStrings.class, "CET46Resource/vocabulary/" + lexiconEnum.name() + ".json");
+            if (builtIn.contains(lexiconEnum)) { // 首先读取jar内部的词典，定义如上
+                BaseMod.loadCustomStringsFile(UIStrings.class, "CET46Resource/vocabulary/" + lexiconEnum.name() + ".json");
+            } 
+            else { // 读取外部的用户词典
+                try {
+                    String path = USER_DICT_PATH + lexiconEnum.name() + ".json";
+                    FileHandle file = Gdx.files.local(path);
+                    if (file.exists()) {
+                        // 使用loadCustomStrings而不是loadCustomStringsFile，是为了读取外部文件？存疑
+                        String jsonContent = file.readString("UTF-8");
+                        BaseMod.loadCustomStrings(UIStrings.class, jsonContent);
+                        logger.info("Loaded external vocabulary: " + lexiconEnum.name());
+                    } else {
+                        logger.warn("External file not found: " + path);
+                    }
+                } catch (Exception e) {
+                    logger.error("Failed to load external vocabulary: " + lexiconEnum.name(), e);
+                }
+            }
         });
         logger.info("Vocabulary load time: {}ms", System.currentTimeMillis() - startTime);
     }

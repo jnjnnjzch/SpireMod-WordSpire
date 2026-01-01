@@ -26,7 +26,8 @@
             "showLexicon": "测验界面显示词库",
             "maxAnsNum": "最大正确答案数目",
             "loadCET": "加载CET词库（须重启游戏以更改）",
-            "loadJLPT": "加载JLPT词库（须重启游戏以更改）"
+            "loadJLPT": "加载JLPT词库（须重启游戏以更改）",
+            "loadUSER_DICT": "加载自定义词库（须重启游戏以更改）"
         }
     },
     "CET46:InfoTip": {

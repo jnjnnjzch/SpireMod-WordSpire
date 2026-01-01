@@ -13,31 +13,23 @@ import com.megacrit.cardcrawl.relics.AbstractRelic;
 import java.util.ArrayList;
 import java.util.Collections;
 
-public class TestCET extends QuizRelic {
-    public TestCET() {
-        super(
-                CallOfCETEvent.BookEnum.CET
-        );
+public class UserDictRelic extends QuizRelic {
+    public UserDictRelic() {
+        super(CallOfCETEvent.BookEnum.USER_DICT);
     }
 
     @Override
     public AbstractRelic makeCopy() {
-        return new TestCET();
+        return new UserDictRelic();
     }
 
     @Override
     public String updateDesByLexicon(BookConfig.LexiconEnum lexiconEnum) {
         if (lexiconEnum == null) {
-            return "NULL";
+            return "Choose a Dictionary"; // 默认提示
         }
-        // 由于现在是一个新的lexiconEnum，它是一个类，我们应该遍历name
-        switch (lexiconEnum.name()) {
-            case "CET4":
-                return DESCRIPTIONS[0];
-            case "CET6":
-                return DESCRIPTIONS[1];
-        }
-        return "???";
+        // 直接显示词典的文件名 (如 "myN1")
+        return "User Dictionary: " + lexiconEnum.name();
     }
 
     @Override
@@ -58,9 +50,25 @@ public class TestCET extends QuizRelic {
         // copy
         meaning_list.addAll(right_ans_list);
         int choice_num = 3 * right_ans_list.size();
+        // int choice_num = 3 * request.getMaxOptionNum();
         if (choice_num > request.getMaxOptionNum()) {
             choice_num = request.getMaxOptionNum();
         }
+
+        // 插入 "WRONG_ANS" (指定干扰项)
+        if (tmp.TEXT_DICT != null) {
+            String wrongStr = tmp.TEXT_DICT.get("WRONG_ANS");
+            if (wrongStr != null && !wrongStr.isEmpty()) {
+                String[] wrongs = wrongStr.split("\\|");
+                for (String w : wrongs) {
+                    // 只有当选项还没满，且不重复时才添加
+                    if (meaning_list.size() < choice_num && !meaning_list.contains(w)) {
+                        meaning_list.add(w);
+                    }
+                }
+            }
+        }
+
         for (int i = meaning_list.size(); i < choice_num;) {
             int target_word = MathUtils.random(0, request.getVocabularySize()- 1);
             if (target_word == request.targetId) {
@@ -74,5 +82,4 @@ public class TestCET extends QuizRelic {
         Collections.shuffle(meaning_list);
         return new QuizData(request.getTargetId(), request.getTargetUiStringsId(), word, right_ans_list, meaning_list);
     }
-
 }

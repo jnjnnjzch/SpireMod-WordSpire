@@ -208,7 +208,8 @@ public class CallOfCETEvent extends AbstractImageEvent {
 
     public enum BookEnum {
         CET,
-        JLPT
+        JLPT,
+        USER_DICT,
     }
 
     @Nullable

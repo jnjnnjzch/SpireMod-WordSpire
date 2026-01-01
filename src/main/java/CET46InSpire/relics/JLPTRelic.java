@@ -56,16 +56,17 @@ public class JLPTRelic extends QuizRelic {
         if (lexiconEnum == null) {
             return "NULL";
         }
-        switch (lexiconEnum) {
-            case N1:
+        // 由于现在是一个新的lexiconEnum，它是一个类，我们应该遍历name
+        switch (lexiconEnum.name()) {
+            case "N1":
                 return DESCRIPTIONS[0];
-            case N2:
+            case "N2":
                 return DESCRIPTIONS[1];
-            case N3:
+            case "N3":
                 return DESCRIPTIONS[2];
-            case N4:
+            case "N4":
                 return DESCRIPTIONS[3];
-            case N5:
+            case "N5":
                 return DESCRIPTIONS[4];
         }
         return "???";
