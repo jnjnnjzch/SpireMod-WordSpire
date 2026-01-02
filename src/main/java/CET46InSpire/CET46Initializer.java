@@ -5,6 +5,7 @@ import CET46InSpire.helpers.QuizCommand;
 import CET46InSpire.relics.TestCET;
 import CET46InSpire.relics.UserDictRelic;
 import CET46InSpire.relics.JLPTRelic;
+import CET46InSpire.helpers.AnkiPackageLoader;
 import CET46InSpire.helpers.BookConfig;
 import CET46InSpire.helpers.BookConfig.LexiconEnum;
 import CET46InSpire.ui.ModConfigPanel;
@@ -19,7 +20,9 @@ import basemod.interfaces.PostInitializeSubscriber;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
+import com.evacipated.cardcrawl.modthespire.lib.SpireConfig;
 import com.evacipated.cardcrawl.modthespire.lib.SpireInitializer;
+import com.google.gson.Gson;
 import com.megacrit.cardcrawl.core.Settings;
 import com.megacrit.cardcrawl.localization.*;
 import com.megacrit.cardcrawl.relics.AbstractRelic;
@@ -32,6 +35,7 @@ import CET46InSpire.helpers.ImageElements;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.io.File; //不得不用io File来解决初始化问题
+import java.io.IOException;
 
 @SpireInitializer
 public class CET46Initializer implements
@@ -82,14 +86,27 @@ public class CET46Initializer implements
             // 使用  java.io.File读取游戏根目录下的文件
             File dir = new File(USER_DICT_PATH);
             if (dir.exists() && dir.isDirectory()) {
-                // 扫描所有 .json 文件
-                File[] files = dir.listFiles((d, name) -> name.endsWith(".json"));
+                File[] files = dir.listFiles();
                 if (files != null) {
                     for (File file : files) {
                         String fileName = file.getName();
-                        String name = fileName.substring(0, fileName.lastIndexOf('.'));                        
-                        userLexicons.add(LexiconEnum.of(name));
-                        logger.info("CET46InSpire: Found User Dictionary -> " + name);
+                        String name = null;
+
+                        // 1. 原有的 JSON 逻辑
+                        if (fileName.endsWith(".json")) {
+                            name = fileName.substring(0, fileName.lastIndexOf('.'));
+                            logger.info("CET46InSpire: Found json file ->" + name);
+                        } 
+                        // 2. 新增：Anki 包逻辑
+                        else if (fileName.endsWith(".apkg")) {
+                            name = fileName.substring(0, fileName.lastIndexOf('.'));
+                            // 可以给 Anki 文件加个前缀或者特殊标记，不过为了统一，直接用文件名也行
+                            logger.info("CET46InSpire: Found Anki Deck -> " + name);
+                        }
+
+                        if (name != null) {
+                            userLexicons.add(LexiconEnum.of(name));
+                        }
                     }
                 }
             } else {
@@ -182,15 +199,58 @@ public class CET46Initializer implements
             } 
             else { // 读取外部的用户词典
                 try {
-                    String path = USER_DICT_PATH + lexiconEnum.name() + ".json";
-                    FileHandle file = Gdx.files.local(path);
-                    if (file.exists()) {
-                        // 使用loadCustomStrings而不是loadCustomStringsFile，是为了读取外部文件？存疑
-                        String jsonContent = file.readString("UTF-8");
+                    String name = lexiconEnum.name();
+                    File jsonFile = new File(USER_DICT_PATH + name + ".json");
+                    File ankiFile = new File(USER_DICT_PATH + name + ".apkg");
+
+                    if (jsonFile.exists()) { //读取 json
+                        String jsonContent = new String(java.nio.file.Files.readAllBytes(jsonFile.toPath()), "UTF-8");
                         BaseMod.loadCustomStrings(UIStrings.class, jsonContent);
-                        logger.info("Loaded external vocabulary: " + lexiconEnum.name());
-                    } else {
-                        logger.warn("External file not found: " + path);
+                        logger.info("Loaded external JSON: " + name);
+                    } 
+                    else if (ankiFile.exists()) { //读取 anki
+                        logger.info("Star loading anki file:" + name);
+                        File audioOutDir = new File(USER_DICT_PATH + "audio/");
+                        SpireConfig tempConfig = new SpireConfig(CET46Initializer.MOD_ID, "config");
+                        List<AnkiPackageLoader.AnkiRawCard> cards = AnkiPackageLoader.loadFromApkg(ankiFile, audioOutDir, tempConfig);
+                        
+                        Map<String, Object> localizationMap = new HashMap<>();
+                        // info字段，就是有多少anki卡片
+                        Map<String, Object> infoData = new HashMap<>();
+                        List<String> infoText = new ArrayList<>();
+                        infoText.add(String.valueOf(cards.size())); // TEXT[0] 放数量
+                        infoData.put("TEXT", infoText);
+                        localizationMap.put(JSON_MOD_KEY + name + "_info", infoData);
+
+                        // 开始读每张卡
+                        for (int i = 0; i < cards.size(); i++) {
+                            AnkiPackageLoader.AnkiRawCard card = cards.get(i);
+                            String wordId = JSON_MOD_KEY + name + "_" + i; 
+
+                            // 构建 UIString=
+                            // 构建TEXT
+                            Map<String, Object> wordData = new HashMap<>();
+                            List<String> textList = new ArrayList<>();
+                            textList.add(card.front); // 第一段是题面
+                            for (String backItem : card.backList) { //之后是答案。
+                                textList.add(backItem);
+                            }
+                            wordData.put("TEXT", textList);
+                            
+                            // 构建TEXT_DICT
+                            if (card.audio != null && !card.audio.isEmpty()) {
+                                Map<String, String> extraData = new HashMap<>();
+                                extraData.put("AUDIO", card.audio); // 加入AUDIO字段
+                                wordData.put("TEXT_DICT", extraData);
+                            }
+                            // 完成这个单词的构建，放入localizationMap
+                            localizationMap.put(wordId, wordData);
+                        }
+                        Gson gson = new Gson();
+                        String generatedJson = gson.toJson(localizationMap);
+                        // 完成写入
+                        BaseMod.loadCustomStrings(UIStrings.class, generatedJson);
+                        logger.info("Converted Anki Deck to Spire JSON (" + cards.size() + " cards)");
                     }
                 } catch (Exception e) {
                     logger.error("Failed to load external vocabulary: " + lexiconEnum.name(), e);

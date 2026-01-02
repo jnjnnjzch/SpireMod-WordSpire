@@ -138,6 +138,7 @@ public class QuizScreen extends CustomScreen {
         this.delta_y = Settings.HEIGHT;
 
         this.infoTip.show("text");
+        this.infoTip.updateWord(this.word_id);
         this.checkButton.show(TEXT[0]);
         this.replayButton.show("重播"); 
         this.replayButton.updateWord(this.word_id);

@@ -1,6 +1,7 @@
 package CET46InSpire.ui;
 
 import CET46InSpire.helpers.ImageElements;
+import CET46InSpire.helpers.WordAudioPlayer;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.megacrit.cardcrawl.core.CardCrawlGame;
@@ -21,6 +22,7 @@ public class InfoTip extends UIButton {
     private static final float BODY_OFFSET_Y;
     private static final float BODY_TEXT_WIDTH;
     private static final float TIP_DESC_LINE_SPACING;
+    private String wordIDToPlay = null;
 
     public InfoTip(float pos_x, float pos_y) {
         super(pos_x, pos_y, IMG_W, IMG_H);
@@ -61,6 +63,13 @@ public class InfoTip extends UIButton {
 
     @Override
     public void buttonClicked() {
+        if (this.wordIDToPlay != null) {
+            WordAudioPlayer.playByWordId(this.wordIDToPlay);
+        }
+    }
+
+    public void updateWord(String wordId) {
+        this.wordIDToPlay = wordId;
     }
 
     static {

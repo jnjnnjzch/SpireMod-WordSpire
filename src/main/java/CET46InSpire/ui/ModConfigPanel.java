@@ -2,6 +2,7 @@ package CET46InSpire.ui;
 
 import CET46InSpire.CET46Initializer;
 import CET46InSpire.events.CallOfCETEvent.BookEnum;
+import CET46InSpire.helpers.AnkiMetadataReader;
 import CET46InSpire.helpers.BookConfig.LexiconEnum;
 import CET46InSpire.relics.QuizRelic;
 import basemod.*;
@@ -22,11 +23,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.*;
-
-import static basemod.EasyConfigPanel.ConfigField.FieldSetter;
 
 public class ModConfigPanel extends ModPanel {
     private static final Logger logger = LogManager.getLogger(ModConfigPanel.class.getName());
@@ -221,57 +221,293 @@ public class ModConfigPanel extends ModPanel {
     }
 
     private void initRelicPages() {
-        for (Map.Entry<String, List<LexiconEnum>> entry: lexiconMap.entrySet()) {
-            List<String> page = new ArrayList<>();
-            IUIElement tmp = null;
-            IUIElement base = elementData.getOrDefault(entry.getKey(), null);
-            if (base == null) {
-                continue;
-            }
-            int target = pages.size();
-            tmp = new ModLabeledButton(uiStrings.EXTRA_TEXT[0], Math.max(base.getX() + 200.0F, 1000.0F), base.getY() - 2.0F,
-                    Settings.CREAM_COLOR, Color.WHITE, FontHelper.cardEnergyFont_L, this, (button) -> {this.setPage(target);});
-            // 目前来说Relic肯定是第二页
-            (pages.get(1)).add(entry.getKey() + "_jump");
-            elementData.put(entry.getKey() + "_jump", tmp);
-            // 设置显示比例的部分
-            tmp = new ModLabel("", base.getX() + 25.0F, base.getY() - PADDINGS_Y.get(0), this, (text) -> {});
-            (pages.get(1)).add(entry.getKey() + "_display");
-            elementData.put(entry.getKey() + "_display", tmp);
+        for (Map.Entry<String, List<LexiconEnum>> entry : lexiconMap.entrySet()) {
+            IUIElement base = elementData.get(entry.getKey());
+            if (base == null) continue;
 
-            for (int i = 0; i < entry.getValue().size(); i++) {
-                LexiconEnum l = entry.getValue().get(i);
-                String tmp_name = entry.getKey() + "_" + l.name();
-                // load weights
-                lexiconData.put(tmp_name, Integer.parseInt(this.config.getString(tmp_name)));
+            boolean isUserDict = entry.getKey().equals("loadUSER_DICT");
 
-                float x = LEXICON_X + LEXICON_PAD_X * (float) (i % 3);
-                float y = LEXICON_Y + LEXICON_PAD_Y * (float) (i / 3);
-                // lexicon text
-                tmp = new ModLabel(uiStrings.TEXT_DICT.getOrDefault(l.name(), l.name()), x, y, this, (label) -> {});
-                page.add(tmp_name + "_name");
-                elementData.put(tmp_name + "_name", tmp);
-                // lexicon button
-                tmp = new ModLabeledButton("+", x + BUTTON_DELTA_X1, y + BUTTON_DELTA_Y,
-                        Settings.CREAM_COLOR, Color.WHITE, FontHelper.cardEnergyFont_L, this, (button) -> {
-                    lexiconData.put(tmp_name, Math.min(10, lexiconData.get(tmp_name) + 1));
-                    ((ModLabel) elementData.get(tmp_name)).text = lexiconData.get(tmp_name).toString();
-                });
-                page.add(tmp_name + "_add");
-                elementData.put(tmp_name + "_add", tmp);
-                tmp = new ModLabeledButton("-", x + BUTTON_DELTA_X2, y + BUTTON_DELTA_Y,
-                        Settings.CREAM_COLOR, Color.WHITE, FontHelper.cardEnergyFont_L, this, (button) -> {
-                    lexiconData.put(tmp_name, Math.max(0, lexiconData.get(tmp_name) - 1));
-                    ((ModLabel) elementData.get(tmp_name)).text = lexiconData.get(tmp_name).toString();
-                });
-                page.add(tmp_name + "_sub");
-                elementData.put(tmp_name + "_sub", tmp);
-                // weight display
-                tmp = new ModLabel(lexiconData.get(tmp_name).toString(), x + WEIGHT_DELTA_X, y + WEIGHT_DELTA_Y, this, (label) -> {});
-                page.add(tmp_name);
-                elementData.put(tmp_name, tmp);
+            // Level 1 -> Level 2 跳转按钮
+            String btnText = isUserDict ? "Manage" : uiStrings.EXTRA_TEXT[0];
+            int targetIndex = pages.size();
+            
+            ModLabeledButton jumpBtn = new ModLabeledButton(btnText, Math.max(base.getX() + 200.0F, 1000.0F), base.getY() - 2.0F,
+                    Settings.CREAM_COLOR, Color.WHITE, FontHelper.cardEnergyFont_L, this, (button) -> { this.setPage(targetIndex); });
+            elementData.put(entry.getKey() + "_jump", jumpBtn);
+            pages.get(1).add(entry.getKey() + "_jump");
+
+            ModLabel displayLabel = new ModLabel("", base.getX() + 25.0F, base.getY() - PADDINGS_Y.get(0), this, (text) -> {});
+            elementData.put(entry.getKey() + "_display", displayLabel);
+            pages.get(1).add(entry.getKey() + "_display");
+
+            // --- 开始构建 Level 2 页面 ---
+            List<String> level2PageIds = new ArrayList<>();
+
+            if (isUserDict) {
+                // ================== USER_DICT (APKG) 逻辑 ==================
+                File dir = new File(CET46Initializer.USER_DICT_PATH);
+                File[] files = dir.listFiles((d, n) -> n.endsWith(".apkg"));
+                
+                if (files != null) {
+                    // 1. 预计算部分：计算页码偏移量
+                    // Level 2 每页 4 个文件
+                    int filesPerPage = 4;
+                    int totalFiles = files.length;
+                    int totalL2Pages = (int) Math.ceil((double)totalFiles / filesPerPage);
+                    if (totalL2Pages == 0) totalL2Pages = 1;
+                    
+                    // Level 3 的起始页码 = 当前页数 + Level 2 总页数
+                    int l3StartBaseIndex = pages.size() + totalL2Pages;
+                    
+                    // 预先计算每个文件对应的 Level 3 跳转目标页码
+                    int[] fileToL3PageIndex = new int[totalFiles];
+                    int currentL3Accumulator = l3StartBaseIndex;
+                    
+                    // 缓存每个文件的结构，避免重复读取
+                    AnkiMetadataReader.AnkiStructure[] structs = new AnkiMetadataReader.AnkiStructure[totalFiles];
+                    
+                    for (int i = 0; i < totalFiles; i++) {
+                        structs[i] = AnkiMetadataReader.readStructure(files[i]);
+                        fileToL3PageIndex[i] = currentL3Accumulator;
+                        
+                        // 计算该文件需要多少个 Level 3 子页面 (每页4个字段)
+                        int fieldsCount = structs[i].fieldNames.size();
+                        int subPages = (int) Math.ceil((double)fieldsCount / 4);
+                        if (subPages == 0) subPages = 1;
+                        currentL3Accumulator += subPages;
+                    }
+
+                    // 2. 生成 Level 2 页面 (词典列表)
+                    for (int p = 0; p < totalL2Pages; p++) {
+                        List<String> l2SubPage = new ArrayList<>();
+                        int startFile = p * filesPerPage;
+                        int endFile = Math.min(startFile + filesPerPage, totalFiles);
+                        
+                        // 页面标题
+                        String titleKey = "ud_l2_title_" + p;
+                        elementData.put(titleKey, new ModLabel("User Dictionaries (Page " + (p+1) + "/" + totalL2Pages + ")", 360.0F, 810.0F, Color.GOLD, this, (l)->{}));
+                        l2SubPage.add(titleKey);
+
+                        for (int i = startFile; i < endFile; i++) {
+                            File apkgFile = files[i];
+                            int idxInPage = i - startFile;
+                            
+                            // 布局：2行 x 2列
+                            // 行 0: Y=750, 行 1: Y=400 (间距 350)
+                            // 列 0: X=400, 列 1: X=1000
+                            float x = 400.0F + (idxInPage % 2) * 600.0F;
+                            float y = 700.0F - (idxInPage / 2) * 200.0F;
+                            
+                            String fileId = "user_apkg_" + i;
+
+                            // (1) 文件名
+                            elementData.put(fileId + "_name", new ModLabel(apkgFile.getName(), x, y, Color.GOLD, this, (l) -> {}));
+                            l2SubPage.add(fileId + "_name");
+
+                            // (2) 权重配置
+                            String fName = apkgFile.getName();
+                            String nameNoExt = fName.substring(0, fName.lastIndexOf('.'));
+                            String wKey = entry.getKey() + "_" + nameNoExt;
+                            if (!config.has(wKey)) config.setString(wKey, "1");
+                            
+                            float wY = y - 70.0F; 
+                            
+                            // [-] 按钮 (修复：添加 config.save)
+                            elementData.put(wKey + "_sub", new ModLabeledButton("-", x, wY, Settings.CREAM_COLOR, Color.WHITE, FontHelper.cardEnergyFont_L, this, (b) -> {
+                                lexiconData.put(wKey, Math.max(0, lexiconData.get(wKey) - 1));
+                                ((ModLabel) elementData.get(wKey)).text = lexiconData.get(wKey).toString();
+                                try {
+                                    config.setString(wKey, lexiconData.get(wKey).toString());
+                                    config.save();
+                                } catch (Exception e) { e.printStackTrace(); }
+                            }));
+                            l2SubPage.add(wKey + "_sub");
+
+                            // 数值
+                            elementData.put(wKey, new ModLabel(lexiconData.get(wKey).toString(), x + 100.0F, wY + 10, this, (l) -> {}));
+                            l2SubPage.add(wKey);
+
+                            // [+] 按钮 (修复：添加 config.save)
+                            elementData.put(wKey + "_add", new ModLabeledButton("+", x + 140.0F, wY, Settings.CREAM_COLOR, Color.WHITE, FontHelper.cardEnergyFont_L, this, (b) -> {
+                                lexiconData.put(wKey, Math.min(10, lexiconData.get(wKey) + 1));
+                                ((ModLabel) elementData.get(wKey)).text = lexiconData.get(wKey).toString();
+                                try {
+                                    config.setString(wKey, lexiconData.get(wKey).toString());
+                                    config.save();
+                                } catch (Exception e) { e.printStackTrace(); }
+                            }));
+                            l2SubPage.add(wKey + "_add");
+
+                            // (3) Config 按钮 (下移 120)
+                            int targetPage = fileToL3PageIndex[i];
+                            ModLabeledButton cfgBtn = new ModLabeledButton("Config Mapping", x, y - 140.0F, Color.SKY, Color.WHITE, FontHelper.cardEnergyFont_L, this, (b) -> {
+                                this.setPage(targetPage);
+                            });
+                            elementData.put(fileId + "_cfg", cfgBtn);
+                            l2SubPage.add(fileId + "_cfg");
+                        }
+                        
+                        // Level 2 翻页按钮
+                        if (p > 0) {
+                            String prevKey = "ud_l2_prev_" + p;
+                            int targetP = targetIndex + p - 1;
+                            elementData.put(prevKey, new ModLabeledButton("< Prev Page", 450.0F, 280.0F, Settings.CREAM_COLOR, Color.WHITE, FontHelper.cardEnergyFont_L, this, (b) -> this.setPage(targetP)));
+                            l2SubPage.add(prevKey);
+                        }
+                        if (p < totalL2Pages - 1) {
+                            String nextKey = "ud_l2_next_" + p;
+                            int targetP = targetIndex + p + 1;
+                            elementData.put(nextKey, new ModLabeledButton("Next Page >", 1150.0F, 280.0F, Settings.CREAM_COLOR, Color.WHITE, FontHelper.cardEnergyFont_L, this, (b) -> this.setPage(targetP)));
+                            l2SubPage.add(nextKey);
+                        }
+
+                        pages.add(l2SubPage);
+                    }
+
+                    // 3. 生成 Level 3 页面 (字段映射)
+                    for (int i = 0; i < totalFiles; i++) {
+                        File apkgFile = files[i];
+                        AnkiMetadataReader.AnkiStructure struct = structs[i]; // 使用缓存
+                        String configKey = "mapping_" + apkgFile.getName();
+                        if (!config.has(configKey)) config.setString(configKey, "0|1|-1");
+                        
+                        int l3FieldsPerPage = 4; // 限制为 4 个字段
+                        int totalFields = struct.fieldNames.size();
+                        int totalSubPages = (int) Math.ceil((double)totalFields / l3FieldsPerPage);
+                        if (totalSubPages == 0) totalSubPages = 1;
+                        
+                        int thisFileStartPageIdx = fileToL3PageIndex[i];
+
+                        for (int p = 0; p < totalSubPages; p++) {
+                            List<String> subPage = new ArrayList<>();
+                            int startF = p * l3FieldsPerPage;
+                            int endF = Math.min(startF + l3FieldsPerPage, totalFields);
+
+                            // 标题
+                            String pgTitleKey = configKey + "_pg_title_" + p;
+                            elementData.put(pgTitleKey, new ModLabel(apkgFile.getName() + " (Page " + (p+1) + "/" + totalSubPages + ")", 360.0F, 810.0F, Color.GOLD, this, (l)->{}));
+                            subPage.add(pgTitleKey);
+
+                            for (int j = startF; j < endF; j++) {
+                                final int fIdx = j;
+                                int rowInPage = j - startF;
+                                // Y轴: 750, 640, 530, 420. 不会遮挡底部 280
+                                float rowY = 750.0F - rowInPage * 110.0F;
+
+                                // 字段名 + 预览
+                                String nKey = configKey + "_" + j + "_n";
+                                elementData.put(nKey, new ModLabel(j + ". " + struct.fieldNames.get(j), 360.0F, rowY, Color.WHITE, this, (l)->{}));
+                                subPage.add(nKey);
+
+                                String pKey = configKey + "_" + j + "_p";
+                                String previewText = struct.sampleValues.size() > j ? struct.sampleValues.get(j) : "";
+                                if (previewText.length() > 25) previewText = previewText.substring(0, 25) + "...";
+                                elementData.put(pKey, new ModLabel("   > " + previewText, 360.0F, rowY - 35.0F, Color.GRAY, this, (l)->{}));
+                                subPage.add(pKey);
+
+                                // 按钮组: Question / Answer / Sound
+                                // Question (Radio) - X: 750
+                                String qKey = configKey + "_" + j + "_q";
+                                elementData.put(qKey, new ModLabeledToggleButton("Question", 750.0F, rowY, Color.WHITE, FontHelper.cardDescFont_N, config.getString(configKey).startsWith(j + "|"), this, (l)->{}, (btn) -> {
+                                    if (btn.enabled) {
+                                        for (String k : elementData.keySet()) {
+                                            if (k.startsWith(configKey) && k.endsWith("_q") && !k.equals(qKey)) {
+                                                ((ModLabeledToggleButton)elementData.get(k)).toggle.enabled = false;
+                                            }
+                                        }
+                                        String[] pts = config.getString(configKey).split("\\|");
+                                        config.setString(configKey, fIdx + "|" + (pts.length > 1 ? pts[1] : "1") + "|" + (pts.length > 2 ? pts[2] : "-1"));
+                                        try { config.save(); } catch (Exception e) {}
+                                    } else btn.enabled = true;
+                                }));
+                                subPage.add(qKey);
+
+                                // Answer (Checkbox) - X: 980
+                                String aKey = configKey + "_" + j + "_a";
+                                boolean isA = Arrays.asList(config.getString(configKey).split("\\|")[1].split(",")).contains(String.valueOf(j));
+                                elementData.put(aKey, new ModLabeledToggleButton("Answer", 980.0F, rowY, Color.WHITE, FontHelper.cardDescFont_N, isA, this, (l)->{}, (btn) -> {
+                                    String[] pts = config.getString(configKey).split("\\|");
+                                    Set<String> aSet = new HashSet<>(Arrays.asList(pts[1].split(",")));
+                                    if (btn.enabled) aSet.add(String.valueOf(fIdx)); else aSet.remove(String.valueOf(fIdx));
+                                    config.setString(configKey, pts[0] + "|" + String.join(",", aSet) + "|" + (pts.length > 2 ? pts[2] : "-1"));
+                                    try { config.save(); } catch (Exception e) {}
+                                }));
+                                subPage.add(aKey);
+
+                                // Sound (Radio) - X: 1210
+                                String sKey = configKey + "_" + j + "_s";
+                                boolean isS = config.getString(configKey).endsWith("|" + j);
+                                elementData.put(sKey, new ModLabeledToggleButton("Sound", 1210.0F, rowY, Color.WHITE, FontHelper.cardDescFont_N, isS, this, (l)->{}, (btn) -> {
+                                    if (btn.enabled) {
+                                        for (String k : elementData.keySet()) {
+                                            if (k.startsWith(configKey) && k.endsWith("_s") && !k.equals(sKey)) {
+                                                ((ModLabeledToggleButton)elementData.get(k)).toggle.enabled = false;
+                                            }
+                                        }
+                                        String[] pts = config.getString(configKey).split("\\|");
+                                        config.setString(configKey, pts[0] + "|" + pts[1] + "|" + fIdx);
+                                    } else {
+                                        String[] pts = config.getString(configKey).split("\\|");
+                                        if (pts.length > 2 && pts[2].equals(String.valueOf(fIdx))) {
+                                            config.setString(configKey, pts[0] + "|" + pts[1] + "|-1");
+                                        }
+                                    }
+                                    try { config.save(); } catch (Exception e) {}
+                                }));
+                                subPage.add(sKey);
+                            }
+
+                            // Level 3 侧边翻页按钮
+                            float NAV_X = 1450.0F;
+                            if (p > 0) {
+                                int prevPageIdx = thisFileStartPageIdx + p - 1;
+                                String prevBtnKey = configKey + "_pgbtn_" + p + "_prev";
+                                elementData.put(prevBtnKey, new ModLabeledButton("Prev", NAV_X, 600.0F, Settings.CREAM_COLOR, Color.WHITE, FontHelper.cardEnergyFont_L, this, (b) -> this.setPage(prevPageIdx)));
+                                subPage.add(prevBtnKey);
+                            }
+                            if (p < totalSubPages - 1) {
+                                int nextPageIdx = thisFileStartPageIdx + p + 1;
+                                String nextBtnKey = configKey + "_pgbtn_" + p + "_next";
+                                elementData.put(nextBtnKey, new ModLabeledButton("Next", NAV_X, 400.0F, Settings.CREAM_COLOR, Color.WHITE, FontHelper.cardEnergyFont_L, this, (b) -> this.setPage(nextPageIdx)));
+                                subPage.add(nextBtnKey);
+                            }
+
+                            pages.add(subPage);
+                        }
+                    }
+                }
+            } else {
+                // ================== 原有内置词典逻辑 (保持不变) ==================
+                for (int i = 0; i < entry.getValue().size(); i++) {
+                    LexiconEnum l = entry.getValue().get(i);
+                    String tmp_name = entry.getKey() + "_" + l.name();
+                    if (!config.has(tmp_name)) config.setString(tmp_name, "1");
+                    lexiconData.put(tmp_name, Integer.parseInt(this.config.getString(tmp_name)));
+
+                    float x = LEXICON_X + LEXICON_PAD_X * (float) (i % 3);
+                    float y = LEXICON_Y + LEXICON_PAD_Y * (float) (i / 3);
+
+                    IUIElement nameLabel = new ModLabel(uiStrings.TEXT_DICT.getOrDefault(l.name(), l.name()), x, y, this, (label) -> {});
+                    level2PageIds.add(tmp_name + "_name");
+                    elementData.put(tmp_name + "_name", nameLabel);
+
+                    level2PageIds.add(tmp_name + "_add");
+                    elementData.put(tmp_name + "_add", new ModLabeledButton("+", x + BUTTON_DELTA_X1, y + BUTTON_DELTA_Y, Settings.CREAM_COLOR, Color.WHITE, FontHelper.cardEnergyFont_L, this, (button) -> {
+                        lexiconData.put(tmp_name, Math.min(10, lexiconData.get(tmp_name) + 1));
+                        ((ModLabel) elementData.get(tmp_name)).text = lexiconData.get(tmp_name).toString();
+                    }));
+
+                    level2PageIds.add(tmp_name + "_sub");
+                    elementData.put(tmp_name + "_sub", new ModLabeledButton("-", x + BUTTON_DELTA_X2, y + BUTTON_DELTA_Y, Settings.CREAM_COLOR, Color.WHITE, FontHelper.cardEnergyFont_L, this, (button) -> {
+                        lexiconData.put(tmp_name, Math.max(0, lexiconData.get(tmp_name) - 1));
+                        ((ModLabel) elementData.get(tmp_name)).text = lexiconData.get(tmp_name).toString();
+                    }));
+
+                    level2PageIds.add(tmp_name);
+                    elementData.put(tmp_name, new ModLabel(lexiconData.get(tmp_name).toString(), x + WEIGHT_DELTA_X, y + WEIGHT_DELTA_Y, this, (label) -> {}));
+                }
+                pages.add(level2PageIds);
             }
-            pages.add(page);
             logger.info("Successfully initialize page for: {}", entry.getKey());
         }
     }
