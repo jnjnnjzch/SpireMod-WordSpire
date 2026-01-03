@@ -315,22 +315,34 @@ public class WordSpireInitializer implements
         generator.dispose();
     }
 
-public static void reloadUserDicts() {
+    public static void reloadUserDicts() {
         logger.info("WordSpire: Force reloading user dictionaries...");
         
-        // 1. 清理旧数据 (allBooks 和 userBooks 都要清)
+        // 1. 清理旧数据
         if (allBooks.containsKey(BookEnum.USER_DICT)) {
             allBooks.remove(BookEnum.USER_DICT);
         }
-        // [新增] 必须把旧的用户书配置从 userBooks 里删掉，否则会残留过期的对象
+        
+        // 2. 清理 userBooks 中的旧对象 (非常重要，否则会有脏数据)
         userBooks.removeIf(book -> book.bookEnum == BookEnum.USER_DICT);
-        // 2. 重新扫描目录
+        
+        // 3. 重新扫描目录
         initUserDictionaries();
-        // 3. 处理新数据
+        
+        // 4. 处理新数据
         if (allBooks.containsKey(BookEnum.USER_DICT)) {
             BookConfig userBook = allBooks.get(BookEnum.USER_DICT);
-            // [新增] 关键一步！将新生成的书加入 userBooks，这样 Neow 才能看到它
+            
+            // [关键] 将新书加入 userBooks，让 Neow 和游戏逻辑看到它
             userBooks.add(userBook);
+            
+            // [关键] 手动注册遗物！
+            // 因为 receiveEditRelics 只在游戏启动时运行一次。
+            // 如果启动时没有用户词库，UserDictRelic 此时是未注册状态，必须补票。
+            AbstractRelic relic = userBook.relicSupplier.get();
+            BaseMod.addRelic(relic, RelicType.SHARED); // 注册到 BaseMod 和 RelicLibrary
+            UnlockTracker.markRelicAsSeen(relic.relicId); // 确保解锁
+            
             // 加载数据 (防止闪退)
             for (Object obj : userBook.lexicons) {
                 String name;
@@ -341,9 +353,12 @@ public static void reloadUserDicts() {
                 }
                 reloadAnkiFile(name);
             }
+
+            // 更新 UI
             ModConfigPanel.addRelicPage(BookEnum.USER_DICT, userBook.lexicons);
         }
-        logger.info("WordSpire: Reload complete. UserBooks updated.");
+        
+        logger.info("WordSpire: Reload complete. UserBooks updated & Relic registered.");
     }
 
     // [新增] 单文件热重载 (用于 Level 3 Save & Return)

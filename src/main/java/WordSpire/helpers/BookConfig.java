@@ -42,6 +42,19 @@ public class BookConfig {
         }
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        BookConfig that = (BookConfig) o;
+        return bookEnum == that.bookEnum;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(bookEnum);
+    }
+
     // --- 代替原 CET46Settings 管理的数据 ---
 
 
