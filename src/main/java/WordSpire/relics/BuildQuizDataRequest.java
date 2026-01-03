@@ -48,8 +48,13 @@ public class BuildQuizDataRequest {
 
         private final DeckService deckService;
         private final DeckStudyService deckStudyService;
-        private final Map<LexiconEnum, String> deskIdMap = new HashMap<>();
-        private final Map<LexiconEnum, String> studySessionIdMap = new HashMap<>();
+        // private final Map<LexiconEnum, String> deskIdMap = new HashMap<>();
+        // private final Map<LexiconEnum, String> studySessionIdMap = new HashMap<>();
+
+        // [修改] Key 改为 String，避免对象引用不同步导致的 Map 查找失败
+        private final Map<String, String> deskIdMap = new HashMap<>();
+        private final Map<String, String> studySessionIdMap = new HashMap<>();
+
         private LexiconEnum currentLexicon;
         private String currentCardId;
         FSRSFactory() {
@@ -59,7 +64,19 @@ public class BuildQuizDataRequest {
 
         @Override
         public BuildQuizDataRequest fromRandom(LexiconEnum lexicon) {
-            final Optional<CardToStudy> optionalCardToStudy = this.deckStudyService.nextCardToStudy(studySessionIdMap.get(lexicon));
+            // [修改] 使用 lexicon.name() (String) 作为 Key
+            String sessionKey = lexicon.name();
+            String sessionId = studySessionIdMap.get(sessionKey);
+            // [安全网] 如果 session 还没创建，尝试临时补救（防止崩游戏）
+            if (sessionId == null) {
+                logger.warn("Session missing for {}, attempting emergency registration...", sessionKey);
+                int size = BookConfig.VOCABULARY_MAP.getOrDefault(lexicon, 100);
+                addLexicon(lexicon, size);
+                sessionId = studySessionIdMap.get(sessionKey);
+            }
+            
+            // final Optional<CardToStudy> optionalCardToStudy = this.deckStudyService.nextCardToStudy(studySessionIdMap.get(lexicon));
+            final Optional<CardToStudy> optionalCardToStudy = this.deckStudyService.nextCardToStudy(sessionId);
             CardToStudy card = optionalCardToStudy.orElseThrow(() -> new NoSuchElementException("No value present of optionalCardToStudy"));
             this.currentCardId = card.id();
             this.currentLexicon = lexicon;
@@ -73,30 +90,33 @@ public class BuildQuizDataRequest {
         @Override
         public void afterQuiz(boolean isPerfect) {
             logger.info("afterQuiz by currentCardId = {}, currentLexicon = {}", currentCardId, currentLexicon);
-            this.deckStudyService.study(studySessionIdMap.get(currentLexicon), this.currentCardId, isPerfect ? Opinion.GREEN : Opinion.RED);
+            if (currentLexicon != null) {
+                this.deckStudyService.study(studySessionIdMap.get(currentLexicon.name()), this.currentCardId, isPerfect ? Opinion.GREEN : Opinion.RED);
+            }
         }
 
         // [新增] 动态注册单个词库 session
         public void addLexicon(LexiconEnum k, int size) {
             // 如果已经存在，就不重复创建，防止覆盖进度
-            if (studySessionIdMap.containsKey(k)) return;
+            String keyName = k.name();
+            if (studySessionIdMap.containsKey(keyName)) return;
 
             logger.info("FSRSFactory registering new lexicon: {} size: {}", k, size);
             
             // 1. 创建 Deck
             // 注意：这里用 k.name() 或 k.toString()，确保和 initMap 逻辑一致
-            String deskId = this.deckService.create(k.name()); 
-            deskIdMap.put(k, deskId);
+            String deskId = this.deckService.create(keyName); 
+            deskIdMap.put(keyName, deskId);
             
             // 2. 填充卡片
             IntStream.range(0, size)
                     .forEach(i -> {
-                        this.deckService.addCard(deskId, new CardDetail(k.name(), String.valueOf(i)));
+                        this.deckService.addCard(deskId, new CardDetail(keyName, String.valueOf(i)));
                     });
             
             // 3. 创建 Session
             String studySessionId = this.deckStudyService.startStudySession(deskId);
-            studySessionIdMap.put(k, studySessionId);
+            studySessionIdMap.put(keyName, studySessionId);
             
             logger.info("Registered session for {}: {}", k, studySessionId);
         }
@@ -105,15 +125,16 @@ public class BuildQuizDataRequest {
             Map<LexiconEnum, List<BuildQuizDataRequest>> requstMap = new HashMap<>();
             vocabularyMap.forEach((k, v) -> {
                 int size = BookConfig.VOCABULARY_MAP.get(k);
+                String keyName = k.name();
                 String deskId = this.deckService.create("USELESS TITLE");
-                deskIdMap.put(k, deskId);
+                deskIdMap.put(keyName, deskId);
                 IntStream.range(0, size)
                         .forEach(i -> {
                             // 特殊地使用CardDetail：存储LexiconEnum和卡片index
-                            this.deckService.addCard(deskId, new CardDetail(k.name(), String.valueOf(i)));
+                            this.deckService.addCard(deskId, new CardDetail(keyName, String.valueOf(i)));
                         });
                 String studySessionId = this.deckStudyService.startStudySession(deskId);
-                studySessionIdMap.put(k, studySessionId);
+                studySessionIdMap.put(keyName, studySessionId);
             });
             logger.info("studySessionIdMap init = {}", studySessionIdMap);
 

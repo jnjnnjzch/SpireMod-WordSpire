@@ -64,6 +64,9 @@ public class BookConfig {
     public static Map<LexiconEnum, Integer> VOCABULARY_MAP = new HashMap<>();
 
     public static void init_map() {
+        if (VOCABULARY_MAP == null) {
+            VOCABULARY_MAP = new HashMap<>();
+        }
         // 调用时间必须在Panel初始化后
         WordSpireInitializer.needLoadBooks.forEach(lexiconEnum -> {
             VOCABULARY_MAP.put(lexiconEnum, Integer.parseInt(CardCrawlGame.languagePack.getUIString(WordSpireInitializer.JSON_MOD_KEY + lexiconEnum.name() + "_info").TEXT[0]));

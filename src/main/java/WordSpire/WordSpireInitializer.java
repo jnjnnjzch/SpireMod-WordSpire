@@ -374,6 +374,25 @@ public class WordSpireInitializer implements
             // 重新解析卡片
             List<AnkiPackageLoader.AnkiRawCard> cards = AnkiPackageLoader.loadFromApkg(ankiFile, audioOutDir, tempConfig);
             
+            // ================= 核心修复开始 =================
+            if (cards != null && !cards.isEmpty()) {
+                // 1. 获取 LexiconEnum 对象 (根据你的静态类实现，这里用 of 或 valueOf)
+                // 注意：确保你的 LexiconEnum.of(name) 能正确返回或创建对象
+                LexiconEnum lexicon = LexiconEnum.valueOf(name); 
+                
+                // 2. [关键!] 更新全局词汇量 Map
+                // 如果不加这一行，Factory.fromTargetIndex 查不到数量就会报 NullPointerException
+                if (BookConfig.VOCABULARY_MAP == null) {
+                    BookConfig.VOCABULARY_MAP = new HashMap<>();
+                }
+                BookConfig.VOCABULARY_MAP.put(lexicon, cards.size());
+                logger.info("Updated VOCABULARY_MAP for {}: size={}", name, cards.size());
+
+                // 3. 注册到 FSRS 学习系统 (防止 SessionDoesNotExist)
+                WordSpire.relics.BuildQuizDataRequest.FSRSFactory.INSTANCE.addLexicon(lexicon, cards.size());
+            }
+            // ================= 核心修复结束 =================
+
             // 重新构建 JSON 数据 (逻辑复用 loadVocabulary)
             Map<String, Object> localizationMap = new HashMap<>();
             Map<String, Object> infoData = new HashMap<>();
