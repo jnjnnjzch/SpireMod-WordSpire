@@ -249,7 +249,7 @@ public class WordSpireInitializer implements
                             // 3. 注册到学习系统 (修复崩溃的核心!)
                             BuildQuizDataRequest.FSRSFactory.INSTANCE.addLexicon(lexicon, cards.size());
                         }
-                        
+
                         Map<String, Object> localizationMap = new HashMap<>();
                         // info字段，就是有多少anki卡片
                         Map<String, Object> infoData = new HashMap<>();
@@ -315,24 +315,23 @@ public class WordSpireInitializer implements
         generator.dispose();
     }
 
-    // [修改] 强制刷新用户词库目录并加载数据
-    public static void reloadUserDicts() {
+public static void reloadUserDicts() {
         logger.info("WordSpire: Force reloading user dictionaries...");
         
-        // 1. 清理旧数据
+        // 1. 清理旧数据 (allBooks 和 userBooks 都要清)
         if (allBooks.containsKey(BookEnum.USER_DICT)) {
             allBooks.remove(BookEnum.USER_DICT);
         }
-        
-        // 2. 重新扫描目录 (这一步只更新了文件名列表)
+        // [新增] 必须把旧的用户书配置从 userBooks 里删掉，否则会残留过期的对象
+        userBooks.removeIf(book -> book.bookEnum == BookEnum.USER_DICT);
+        // 2. 重新扫描目录
         initUserDictionaries();
-        
-        // 3. [关键修复] 遍历并加载所有用户词库的数据到内存
+        // 3. 处理新数据
         if (allBooks.containsKey(BookEnum.USER_DICT)) {
             BookConfig userBook = allBooks.get(BookEnum.USER_DICT);
-            
-            // 无论是 Enum 列表还是 String 列表，都统一转成 String 处理
-            // 假设你还在用 lexicons 存 Enum，我们取 name()
+            // [新增] 关键一步！将新生成的书加入 userBooks，这样 Neow 才能看到它
+            userBooks.add(userBook);
+            // 加载数据 (防止闪退)
             for (Object obj : userBook.lexicons) {
                 String name;
                 if (obj instanceof Enum) {
@@ -340,16 +339,11 @@ public class WordSpireInitializer implements
                 } else {
                     name = obj.toString();
                 }
-                
-                // 调用单文件加载逻辑，确保 BaseMod 拥有最新的词条数据
                 reloadAnkiFile(name);
             }
-
-            // 4. 更新 ConfigPanel 的静态映射
             ModConfigPanel.addRelicPage(BookEnum.USER_DICT, userBook.lexicons);
         }
-        
-        logger.info("WordSpire: Reload complete.");
+        logger.info("WordSpire: Reload complete. UserBooks updated.");
     }
 
     // [新增] 单文件热重载 (用于 Level 3 Save & Return)
