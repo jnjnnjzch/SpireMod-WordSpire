@@ -76,6 +76,31 @@ public class BuildQuizDataRequest {
             this.deckStudyService.study(studySessionIdMap.get(currentLexicon), this.currentCardId, isPerfect ? Opinion.GREEN : Opinion.RED);
         }
 
+        // [新增] 动态注册单个词库 session
+        public void addLexicon(LexiconEnum k, int size) {
+            // 如果已经存在，就不重复创建，防止覆盖进度
+            if (studySessionIdMap.containsKey(k)) return;
+
+            logger.info("FSRSFactory registering new lexicon: {} size: {}", k, size);
+            
+            // 1. 创建 Deck
+            // 注意：这里用 k.name() 或 k.toString()，确保和 initMap 逻辑一致
+            String deskId = this.deckService.create(k.name()); 
+            deskIdMap.put(k, deskId);
+            
+            // 2. 填充卡片
+            IntStream.range(0, size)
+                    .forEach(i -> {
+                        this.deckService.addCard(deskId, new CardDetail(k.name(), String.valueOf(i)));
+                    });
+            
+            // 3. 创建 Session
+            String studySessionId = this.deckStudyService.startStudySession(deskId);
+            studySessionIdMap.put(k, studySessionId);
+            
+            logger.info("Registered session for {}: {}", k, studySessionId);
+        }
+
         public void initMap(Map<LexiconEnum, Integer> vocabularyMap) {
             Map<LexiconEnum, List<BuildQuizDataRequest>> requstMap = new HashMap<>();
             vocabularyMap.forEach((k, v) -> {

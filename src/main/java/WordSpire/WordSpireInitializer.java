@@ -25,6 +25,7 @@ import WordSpire.helpers.BookConfig;
 import WordSpire.helpers.ImageElements;
 import WordSpire.helpers.QuizCommand;
 import WordSpire.helpers.BookConfig.LexiconEnum;
+import WordSpire.relics.BuildQuizDataRequest;
 import WordSpire.relics.JLPTRelic;
 import WordSpire.relics.TestCET;
 import WordSpire.relics.UserDictRelic;
@@ -82,7 +83,7 @@ public class WordSpireInitializer implements
         initUserDictionaries();
     }
 
-    private static void initUserDictionaries() {
+    public static void initUserDictionaries() {
         List<LexiconEnum> userLexicons = new ArrayList<>();
         try {
             // 使用  java.io.File读取游戏根目录下的文件
@@ -237,6 +238,18 @@ public class WordSpireInitializer implements
                         SpireConfig tempConfig = new SpireConfig( WordSpireInitializer.MOD_ID, "config");
                         List<AnkiPackageLoader.AnkiRawCard> cards = AnkiPackageLoader.loadFromApkg(ankiFile, audioOutDir, tempConfig);
                         
+                        if (cards != null && !cards.isEmpty()) {
+                            // 1. 获取枚举/对象 (根据你的重构，这里可能是 valueOf 或 of)
+                            LexiconEnum lexicon = LexiconEnum.valueOf(name); 
+                            
+                            // 2. 更新全局词汇量表 (防止其他地方用 get 报错)
+                            if (BookConfig.VOCABULARY_MAP == null) BookConfig.VOCABULARY_MAP = new HashMap<>();
+                            BookConfig.VOCABULARY_MAP.put(lexicon, cards.size());
+                            
+                            // 3. 注册到学习系统 (修复崩溃的核心!)
+                            BuildQuizDataRequest.FSRSFactory.INSTANCE.addLexicon(lexicon, cards.size());
+                        }
+                        
                         Map<String, Object> localizationMap = new HashMap<>();
                         // info字段，就是有多少anki卡片
                         Map<String, Object> infoData = new HashMap<>();
@@ -300,6 +313,91 @@ public class WordSpireInitializer implements
         parameter.size = (int)(22.0F * Settings.scale);
         DevConsole.consoleFont = generator.generateFont(parameter);
         generator.dispose();
+    }
+
+    // [修改] 强制刷新用户词库目录并加载数据
+    public static void reloadUserDicts() {
+        logger.info("WordSpire: Force reloading user dictionaries...");
+        
+        // 1. 清理旧数据
+        if (allBooks.containsKey(BookEnum.USER_DICT)) {
+            allBooks.remove(BookEnum.USER_DICT);
+        }
+        
+        // 2. 重新扫描目录 (这一步只更新了文件名列表)
+        initUserDictionaries();
+        
+        // 3. [关键修复] 遍历并加载所有用户词库的数据到内存
+        if (allBooks.containsKey(BookEnum.USER_DICT)) {
+            BookConfig userBook = allBooks.get(BookEnum.USER_DICT);
+            
+            // 无论是 Enum 列表还是 String 列表，都统一转成 String 处理
+            // 假设你还在用 lexicons 存 Enum，我们取 name()
+            for (Object obj : userBook.lexicons) {
+                String name;
+                if (obj instanceof Enum) {
+                    name = ((Enum<?>) obj).name();
+                } else {
+                    name = obj.toString();
+                }
+                
+                // 调用单文件加载逻辑，确保 BaseMod 拥有最新的词条数据
+                reloadAnkiFile(name);
+            }
+
+            // 4. 更新 ConfigPanel 的静态映射
+            ModConfigPanel.addRelicPage(BookEnum.USER_DICT, userBook.lexicons);
+        }
+        
+        logger.info("WordSpire: Reload complete.");
+    }
+
+    // [新增] 单文件热重载 (用于 Level 3 Save & Return)
+    public static void reloadAnkiFile(String name) {
+        logger.info("WordSpire: Hot reloading Anki file -> " + name);
+        try {
+            File ankiFile = new File(USER_DICT_PATH + name + ".apkg");
+            if (!ankiFile.exists()) return;
+
+            SpireConfig tempConfig = new SpireConfig(MOD_ID, "config");
+            File audioOutDir = new File(USER_DICT_PATH + "audio/");
+            
+            // 重新解析卡片
+            List<AnkiPackageLoader.AnkiRawCard> cards = AnkiPackageLoader.loadFromApkg(ankiFile, audioOutDir, tempConfig);
+            
+            // 重新构建 JSON 数据 (逻辑复用 loadVocabulary)
+            Map<String, Object> localizationMap = new HashMap<>();
+            Map<String, Object> infoData = new HashMap<>();
+            List<String> infoText = new ArrayList<>();
+            infoText.add(String.valueOf(cards.size()));
+            infoData.put("TEXT", infoText);
+            localizationMap.put(JSON_MOD_KEY + name + "_info", infoData);
+
+            for (int i = 0; i < cards.size(); i++) {
+                AnkiPackageLoader.AnkiRawCard card = cards.get(i);
+                String wordId = JSON_MOD_KEY + name + "_" + i;
+                Map<String, Object> wordData = new HashMap<>();
+                List<String> textList = new ArrayList<>();
+                textList.add(card.front);
+                textList.addAll(card.backList);
+                wordData.put("TEXT", textList);
+                if (card.audio != null && !card.audio.isEmpty()) {
+                    Map<String, String> extraData = new HashMap<>();
+                    extraData.put("AUDIO", card.audio);
+                    wordData.put("TEXT_DICT", extraData);
+                }
+                localizationMap.put(wordId, wordData);
+            }
+
+            // 立即生效
+            Gson gson = new Gson();
+            String generatedJson = gson.toJson(localizationMap);
+            BaseMod.loadCustomStrings(UIStrings.class, generatedJson);
+            
+            logger.info("WordSpire: Hot reload finished for " + name);
+        } catch (Exception e) {
+            logger.error("WordSpire: Hot reload failed", e);
+        }
     }
 
 }
