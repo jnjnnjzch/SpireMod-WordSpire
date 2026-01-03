@@ -4,12 +4,12 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>__name__</groupId>
-    <artifactId>CET46InSpire</artifactId>
+    <groupId>jnjnnj</groupId>
+    <artifactId>WordSpire</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
-    <name>CET46InSpire</name>
-    <description>Do not forget CET46!</description>
+    <name>WordSpire</name>
+    <description>Add voice and anki support for CET46InSpire!</description>
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
@@ -75,7 +75,7 @@
     </dependencies>
 
     <build>
-        <finalName>CET46InSpire</finalName>
+        <finalName>WordSpire</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -129,6 +129,7 @@
                         <configuration>
                             <target>
                                 <copy file="target/${project.artifactId}.jar" tofile="${Steam.path}/common/SlayTheSpire/mods/${project.artifactId}.jar"/>
+                                <copy file="target/${project.artifactId}.jar" tofile="${Steam.path}/common/SlayTheSpire/WordSpire/content/${project.artifactId}.jar"/>
                             </target>
                         </configuration>
                         <goals>

@@ -7,7 +7,7 @@ vocabulary/*.json
 vocabulary/__pycache__/
 vocabulary/*.anki2
 vocabulary/*.anki21
-
+vocabulary/
 ### IntelliJ IDEA ###
 .idea/modules.xml
 .idea/jarRepositories.xml
