@@ -1,4 +1,4 @@
-package CET46InSpire.helpers;
+package WordSpire.helpers;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.files.FileHandle;
@@ -15,7 +15,7 @@ public class UrlAudioPlayer {
     private static Sound currentSound = null;
     
     // 缓存目录路径
-    private static final String FOLDER_PATH = "mods/CET46InSpire/audio/";
+    private static final String FOLDER_PATH = "mods/WordSpire/audio/";
 
     /**
      * 播放单词音频。
