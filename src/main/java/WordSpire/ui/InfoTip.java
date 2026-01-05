@@ -103,8 +103,8 @@ public class InfoTip extends UIButton {
         BODY_OFFSET_Y = -10.0F * Settings.scale;
         BODY_TEXT_WIDTH = 560.0F * Settings.scale;
         TIP_DESC_LINE_SPACING = 26.0F * Settings.scale;
-        IMG_W = 30.0F * Settings.xScale;
-        IMG_H = 30.0F * Settings.yScale;
+        IMG_W = 45.0F * Settings.xScale;
+        IMG_H = 45.0F * Settings.yScale;
         HOVER_BLEND_COLOR = new Color(1.0F, 1.0F, 1.0F, 0.2F);
     }
 }
