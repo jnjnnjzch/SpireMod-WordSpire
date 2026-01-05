@@ -1,12 +1,14 @@
 package WordSpire.ui;
 
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.megacrit.cardcrawl.core.CardCrawlGame;
 import com.megacrit.cardcrawl.core.Settings;
 import com.megacrit.cardcrawl.helpers.FontHelper;
 import com.megacrit.cardcrawl.helpers.ImageMaster;
 import com.megacrit.cardcrawl.helpers.TipHelper;
+import com.megacrit.cardcrawl.helpers.controller.CInputHelper;
 
 import WordSpire.helpers.ImageElements;
 import WordSpire.helpers.WordAudioPlayer;
@@ -43,9 +45,28 @@ public class InfoTip extends UIButton {
             renderTip(sb);
         }
 
+        // 新增：如果是手柄模式，渲染按键提示
+        if (Settings.isControllerMode) {
+            renderControllerButton(sb);
+        }
+
         if (Settings.isDebug) {
             this.hb.render(sb);
         }
+    }
+
+    // 新增：渲染手柄按键逻辑
+    private void renderControllerButton(SpriteBatch sb) {
+        sb.setColor(Color.WHITE);
+        Texture buttonImg = ImageMaster.CONTROLLER_Y; // 默认使用 Xbox 的 X 键图标
+        
+        // 渲染位置：放在 InfoTip 图标的左侧，稍微偏移一点
+        // 32f 是图标的大概尺寸，根据需要微调
+        float iconSize = 32.0F * Settings.scale;
+        float iconX = this.current_x - iconSize - 10.0F * Settings.scale; 
+        float iconY = this.current_y + (IMG_H - iconSize) / 2.0F; // 垂直居中
+
+        sb.draw(buttonImg, iconX, iconY, iconSize, iconSize);
     }
 
     public void renderTip(SpriteBatch sb) {

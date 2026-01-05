@@ -68,7 +68,7 @@ public class QuizScreen extends CustomScreen {
     private boolean correction;
     private final CheckButton checkButton;
     private final ReturnButton returnButton;
-    private final ReplayButton replayButton;
+    // private final ReplayButton replayButton;
     private final ArrayList<WordButton> wordButtons;
     private final InfoTip infoTip;
     public boolean ans_checked;
@@ -88,8 +88,8 @@ public class QuizScreen extends CustomScreen {
         this.returnButton.font_center = true;
         this.infoTip = new InfoTip(FRAME_X + TIP_X,FRAME_Y + TIP_Y);
         this.infoTip.attached = true;
-        this.replayButton = new ReplayButton(FRAME_X + REPLAY_X, FRAME_Y + REPLAY_Y); // 单词右边350像素
-        this.replayButton.attached = true; // 让它跟随面板一起滑动
+        // this.replayButton = new ReplayButton(FRAME_X + REPLAY_X, FRAME_Y + REPLAY_Y); // 单词右边350像素
+        // this.replayButton.attached = true; // 让它跟随面板一起滑动
         this.wordButtons = new ArrayList<>();
         for (int i = 0; i < WORD_COL_MAX * WORD_ROW_MAX; i ++) {
             int col = i % WORD_COL_MAX;
@@ -142,8 +142,8 @@ public class QuizScreen extends CustomScreen {
         this.infoTip.show("text");
         this.infoTip.updateWord(this.word_id);
         this.checkButton.show(TEXT[0]);
-        this.replayButton.show("重播"); 
-        this.replayButton.updateWord(this.word_id);
+        // this.replayButton.show("重播"); 
+        // this.replayButton.updateWord(this.word_id);
         for (WordButton w: this.wordButtons) {
             w.reset();
         }
@@ -211,7 +211,7 @@ public class QuizScreen extends CustomScreen {
             this.checkButton.attachedUpdate(FRAME_Y + BOTTOM_BUT_Y + this.delta_y);
         }
         this.infoTip.attachedUpdate(FRAME_Y + TIP_Y + this.delta_y);
-        this.replayButton.attachedUpdate(FRAME_Y + TIP_Y + this.delta_y);
+        // this.replayButton.attachedUpdate(FRAME_Y + TIP_Y + this.delta_y);
         for (WordButton w: this.wordButtons) {
             if (!w.isHidden) {
                 w.attachedRelUpdate(FRAME_Y + this.delta_y);
@@ -226,6 +226,10 @@ public class QuizScreen extends CustomScreen {
             return;
         }
         
+        boolean isReplay = CInputActionSet.proceed.isJustPressed();
+        if (isReplay){
+            this.infoTip.buttonClicked();
+        }
         // 计算当前有的有效按钮数（没隐藏的按钮数）
         int totalItems = 0;
         for (WordButton w : this.wordButtons) {
@@ -335,7 +339,7 @@ public class QuizScreen extends CustomScreen {
         }
         this.renderQuestion(sb, font_color);
         this.infoTip.render(sb);
-        this.replayButton.render(sb, this.descFont);
+        // this.replayButton.render(sb, this.descFont);
         if (this.ans_checked) {
             FontHelper.renderFontLeft(sb, this.descFont, uiStrings.TEXT[2] + this.score,
                     SCORE_X, SCORE_Y + this.delta_y, font_color);
