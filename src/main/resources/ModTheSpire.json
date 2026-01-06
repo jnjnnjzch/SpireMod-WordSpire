@@ -1,9 +1,9 @@
 {
   "modid": "WordSpire",
   "name": "Word Spire",
-  "author_list": [" jnjnnj"],
+  "author_list": ["jnjnnj"],
   "description": "Reciting words with anki packages! Also support audio.\n使用Anki包来背单词，也支持音频播放！",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "sts_version": "12-18-2022",
   "mts_version": "3.30.0",
   "dependencies": ["basemod", "stslib"],
