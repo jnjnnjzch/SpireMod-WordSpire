@@ -3,6 +3,13 @@
 > **[本项目](https://github.com/jnjnnjzch/SpireMod-WordSpire)遵循 [GPL v3.0](LICENSE) 开源协议。**
 > 欢迎任何人参与贡献（贡献代码、制作词库、或者评测与推荐优质词库！）
 
+![License](https://img.shields.io/github/license/jnjnnjzch/spiremod-wordspire?color=blue&label=License&style=flat-square)
+![Game](https://img.shields.io/badge/Game-Slay_the_Spire-red?style=flat-square&logo=steam)
+
+![浏览量](https://img.shields.io/steam/views/3637498963?label=浏览量&style=flat-square&logo=steam)
+![订阅数](https://img.shields.io/steam/subscriptions/3637498963?label=订阅数&style=flat-square&logo=steam)
+![收藏数](https://img.shields.io/steam/favorites/3637498963?label=收藏数&style=flat-square&logo=steam)
+
 ## 🙏 致谢
 
 感谢前辈的开源代码[别忘了四六级](https://github.com/sleepyHolo/SpireMod_CET46InSpire)
