@@ -5,7 +5,6 @@
 
 ![License](https://img.shields.io/github/license/jnjnnjzch/spiremod-wordspire?color=blue&label=License&style=flat-square)
 ![Game](https://img.shields.io/badge/Game-Slay_the_Spire-red?style=flat-square&logo=steam)
-
 ![浏览量](https://img.shields.io/steam/views/3637498963?label=浏览量&style=flat-square&logo=steam)
 ![订阅数](https://img.shields.io/steam/subscriptions/3637498963?label=订阅数&style=flat-square&logo=steam)
 ![收藏数](https://img.shields.io/steam/favorites/3637498963?label=收藏数&style=flat-square&logo=steam)
