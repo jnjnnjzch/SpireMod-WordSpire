@@ -67,9 +67,9 @@ public class WordSpireInitializer implements
     public static Set<LexiconEnum> needLoadBooks = new HashSet<LexiconEnum>();
     static {
         // test
-        allBooks.put(BookEnum.JLPT, new BookConfig(BookEnum.JLPT,
-                Arrays.asList(LexiconEnum.N1, LexiconEnum.N2, LexiconEnum.N3, LexiconEnum.N4, LexiconEnum.N5), () -> new JLPTRelic()));
-        allBooks.put(BookEnum.CET, new BookConfig(BookEnum.CET, Arrays.asList(LexiconEnum.CET4, LexiconEnum.CET6), () -> new TestCET()));
+        // allBooks.put(BookEnum.JLPT, new BookConfig(BookEnum.JLPT,
+        //         Arrays.asList(LexiconEnum.N1, LexiconEnum.N2, LexiconEnum.N3, LexiconEnum.N4, LexiconEnum.N5), () -> new JLPTRelic()));
+        // allBooks.put(BookEnum.CET, new BookConfig(BookEnum.CET, Arrays.asList(LexiconEnum.CET4, LexiconEnum.CET6), () -> new TestCET()));
 //        allBooks.put(BookEnum.CET4, new BookConfig(BookEnum.CET4, new ArrayList<>(), () -> new BookOfCET4()));
 //        allBooks.put(BookEnum.CET6, new BookConfig(BookEnum.CET6, Arrays.asList(BookEnum.CET4), () -> new BookOfCET6()));
 //        allBooks.put(BookEnum.N5, new BookConfig(BookEnum.N5, new ArrayList<>(), () -> new BookOfJlpt(BookEnum.N5, ImageElements.RELIC_N5_IMG)));
@@ -159,8 +159,8 @@ public class WordSpireInitializer implements
         });
         // test
 //        ModConfigPanel.addRelicPage(BookEnum.CET4, Arrays.asList(LexiconEnum.CET4, LexiconEnum.CET6));
-        ModConfigPanel.addRelicPage(BookEnum.CET, Arrays.asList(LexiconEnum.CET4, LexiconEnum.CET6));
-        ModConfigPanel.addRelicPage(BookEnum.JLPT, Arrays.asList(LexiconEnum.N1, LexiconEnum.N2, LexiconEnum.N3, LexiconEnum.N4, LexiconEnum.N5));
+        // ModConfigPanel.addRelicPage(BookEnum.CET, Arrays.asList(LexiconEnum.CET4, LexiconEnum.CET6));
+        // ModConfigPanel.addRelicPage(BookEnum.JLPT, Arrays.asList(LexiconEnum.N1, LexiconEnum.N2, LexiconEnum.N3, LexiconEnum.N4, LexiconEnum.N5));
         // 为USER_DICT注册
         if (allBooks.containsKey(BookEnum.USER_DICT)) {
              ModConfigPanel.addRelicPage(BookEnum.USER_DICT, allBooks.get(BookEnum.USER_DICT).lexicons);
@@ -212,16 +212,16 @@ public class WordSpireInitializer implements
         long startTime = System.currentTimeMillis();
 
         // jar内部的词典定义
-        List<LexiconEnum> builtIn = Arrays.asList(
-            LexiconEnum.N1, LexiconEnum.N2, LexiconEnum.N3, LexiconEnum.N4, LexiconEnum.N5,
-            LexiconEnum.CET4, LexiconEnum.CET6
-            );
+        // List<LexiconEnum> builtIn = Arrays.asList(
+        //     LexiconEnum.N1, LexiconEnum.N2, LexiconEnum.N3, LexiconEnum.N4, LexiconEnum.N5,
+        //     LexiconEnum.CET4, LexiconEnum.CET6
+        //     );
 
         needLoadBooks.forEach(lexiconEnum -> {
-            if (builtIn.contains(lexiconEnum)) { // 首先读取jar内部的词典，定义如上
-                BaseMod.loadCustomStringsFile(UIStrings.class, "CET46Resource/vocabulary/" + lexiconEnum.name() + ".json");
-            } 
-            else { // 读取外部的用户词典
+            // if (builtIn.contains(lexiconEnum)) { // 首先读取jar内部的词典，定义如上
+            //     BaseMod.loadCustomStringsFile(UIStrings.class, "CET46Resource/vocabulary/" + lexiconEnum.name() + ".json");
+            // } 
+            // else { // 读取外部的用户词典
                 try {
                     String name = lexiconEnum.name();
                     File jsonFile = new File(USER_DICT_PATH + name + ".json");
@@ -291,7 +291,7 @@ public class WordSpireInitializer implements
                 } catch (Exception e) {
                     logger.error("Failed to load external vocabulary: " + lexiconEnum.name(), e);
                 }
-            }
+            // }
         });
         logger.info("Vocabulary load time: {}ms", System.currentTimeMillis() - startTime);
     }

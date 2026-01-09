@@ -89,8 +89,8 @@ public class ModConfigPanel extends ModPanel {
         pages.add(Arrays.asList("darkMode", "pureFont", "fastMode", "casualMode", "ignoreCheck", "showLexicon", "maxAnsNum"));
         // Page 1: Relic/Book Settings (Initial)
         List<String> page2 = new ArrayList<>();
-        page2.add("loadCET");
-        page2.add("loadJLPT");
+        // page2.add("loadCET");
+        // page2.add("loadJLPT");
         // loadUSER_DICT 会在 initRelicPages 或刷新时动态处理
         pages.add(page2);
 
@@ -334,7 +334,7 @@ public class ModConfigPanel extends ModPanel {
             // 计算位置：放在 CET/JLPT 下面
             // 假设 Page 1 现有元素占用了 Y，我们需要找到最后一个元素的位置
             // 这里简单硬编码一个位置，或者根据 pages.get(1) 的大小计算
-            float yPos = ELEMENT_Y - PADDINGS_Y.get(1) * 2; // 第3行
+            float yPos = ELEMENT_Y - PADDINGS_Y.get(1) * 0; // 第3行
             
             ModLabeledToggleButton toggle = new ModLabeledToggleButton("User Dictionary", ELEMENT_X, yPos,
                     Settings.CREAM_COLOR, FontHelper.charDescFont, val, this, (label) -> {},

@@ -85,13 +85,13 @@ public class BookConfig {
         }
 
         // 保留原有的词典
-        public static final LexiconEnum CET4 = new LexiconEnum("CET4");
-        public static final LexiconEnum CET6 = new LexiconEnum("CET6");
-        public static final LexiconEnum N5 = new LexiconEnum("N5");
-        public static final LexiconEnum N4 = new LexiconEnum("N4");
-        public static final LexiconEnum N3 = new LexiconEnum("N3");
-        public static final LexiconEnum N2 = new LexiconEnum("N2");
-        public static final LexiconEnum N1 = new LexiconEnum("N1");
+        // public static final LexiconEnum CET4 = new LexiconEnum("CET4");
+        // public static final LexiconEnum CET6 = new LexiconEnum("CET6");
+        // public static final LexiconEnum N5 = new LexiconEnum("N5");
+        // public static final LexiconEnum N4 = new LexiconEnum("N4");
+        // public static final LexiconEnum N3 = new LexiconEnum("N3");
+        // public static final LexiconEnum N2 = new LexiconEnum("N2");
+        // public static final LexiconEnum N1 = new LexiconEnum("N1");
 
         // 读取外部文件的方法
         public static LexiconEnum of(String id) {
@@ -126,13 +126,13 @@ public class BookConfig {
 
     @Nullable
     public static LexiconEnum getLexicon(String lexicon) {
-        if (lexicon.equalsIgnoreCase("CET4")) return LexiconEnum.CET4;
-        if (lexicon.equalsIgnoreCase("CET6")) return LexiconEnum.CET6;
-        if (lexicon.equalsIgnoreCase("N5")) return LexiconEnum.N5;
-        if (lexicon.equalsIgnoreCase("N4")) return LexiconEnum.N4;
-        if (lexicon.equalsIgnoreCase("N3")) return LexiconEnum.N3;
-        if (lexicon.equalsIgnoreCase("N2")) return LexiconEnum.N2;
-        if (lexicon.equalsIgnoreCase("N1")) return LexiconEnum.N1;
+        // if (lexicon.equalsIgnoreCase("CET4")) return LexiconEnum.CET4;
+        // if (lexicon.equalsIgnoreCase("CET6")) return LexiconEnum.CET6;
+        // if (lexicon.equalsIgnoreCase("N5")) return LexiconEnum.N5;
+        // if (lexicon.equalsIgnoreCase("N4")) return LexiconEnum.N4;
+        // if (lexicon.equalsIgnoreCase("N3")) return LexiconEnum.N3;
+        // if (lexicon.equalsIgnoreCase("N2")) return LexiconEnum.N2;
+        // if (lexicon.equalsIgnoreCase("N1")) return LexiconEnum.N1;
 
         // 现在不返回null，而是允许扩展
         return LexiconEnum.of(lexicon);
