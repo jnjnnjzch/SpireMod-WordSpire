@@ -70,15 +70,19 @@ public class InfoTip extends UIButton {
     }
 
     public void renderTip(SpriteBatch sb) {
-        float h = -FontHelper.getSmartHeight(FontHelper.tipBodyFont, TIP_BODY,
-                BODY_TEXT_WIDTH, TIP_DESC_LINE_SPACING) - 7.0F * Settings.scale;
         float x = this.current_x;
         float y = this.current_y - IMG_H;
+        renderGenericTip(sb, x, y, TIP_BODY);
+    }
+
+    public void renderGenericTip(SpriteBatch sb, float x, float y, String text) {
+        float h = -FontHelper.getSmartHeight(FontHelper.tipBodyFont, text,
+                BODY_TEXT_WIDTH, TIP_DESC_LINE_SPACING) - 7.0F * Settings.scale;
         sb.setColor(Color.WHITE);
         sb.draw(ImageMaster.KEYWORD_TOP, x, y, BOX_W, BOX_EDGE_H);
         sb.draw(ImageMaster.KEYWORD_BODY, x, y - h - BOX_EDGE_H, BOX_W, h + BOX_EDGE_H);
         sb.draw(ImageMaster.KEYWORD_BOT, x, y - h - BOX_BODY_H, BOX_W, BOX_EDGE_H);
-        FontHelper.renderSmartText(sb, FontHelper.tipBodyFont, TIP_BODY,
+        FontHelper.renderSmartText(sb, FontHelper.tipBodyFont, text,
                 x + TEXT_OFFSET_X, y + BODY_OFFSET_Y,
                 BODY_TEXT_WIDTH, TIP_DESC_LINE_SPACING, Color.WHITE);
     }

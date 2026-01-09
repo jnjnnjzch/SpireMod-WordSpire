@@ -372,19 +372,71 @@ public class QuizScreen extends CustomScreen {
     }
 
     private void renderQuestion(SpriteBatch sb, Color font_color) {
-        FontHelper.renderFontCentered(sb, this.titleFont, this.word,
-                QUESTION_CX, FRAME_Y + QUESTION_CY + this.delta_y, font_color);
+        float maxQuestionWidth = FRAME_WIDTH * 0.8F; // 设定最大宽度为背景板宽度的 80%
+        float lineSpacing = 40.0F * Settings.scale; // 题目行间距稍大一点
+        float questionHeight = FontHelper.getSmartHeight(
+            this.titleFont, 
+            this.word, 
+            maxQuestionWidth, 
+            lineSpacing
+        );
+        float questionWidth = FontHelper.getSmartWidth(
+            this.titleFont, 
+            this.word, 
+            maxQuestionWidth, 
+            lineSpacing
+        );
+        float questionY = FRAME_Y + QUESTION_CY + this.delta_y - (questionHeight / 2.0f) + (lineSpacing / 2.0f);
+        FontHelper.renderSmartText(
+            sb, 
+            this.titleFont, 
+            this.word, 
+            QUESTION_CX - (Math.min(questionWidth, maxQuestionWidth) / 2.0f), // 左边缘 = 中心 - 半宽
+            questionY, 
+            maxQuestionWidth, 
+            lineSpacing, 
+            font_color
+        );
+
         if (ModConfigPanel.showLexicon) {
             String lexicon = this.correction ? this.lexicon : TEXT[3] + this.lexicon;
             FontHelper.renderFontLeftTopAligned(sb, this.descFont, lexicon,
                     LEXICON_X, FRAME_Y + LEXICON_Y + this.delta_y, font_color);
         }
+
+        WordButton activeTooltipBtn = null; // 用于记录需要画悬浮窗的按钮
+
         for (WordButton w: this.wordButtons) {
             if (!w.isHidden) {
                 w.fontColor = font_color;
                 w.render(sb, this.descFont);
+
+                if (w.hb.hovered && w.isTruncated) {
+                    activeTooltipBtn = w;
+                }
             }
         }
+
+        if (activeTooltipBtn != null) {
+            float tipX;
+            // 简单的 3x3 布局判断：根据按钮中心点相对于屏幕中线的位置
+            if (activeTooltipBtn.current_x <= Settings.WIDTH / 2.0f) {
+                // 左侧或中间 -> 弹在右边
+                // 坐标 = 按钮右边缘 + 间距
+                tipX = activeTooltipBtn.hb.cX + (activeTooltipBtn.hb.width / 2.0f) + 20.0f * Settings.scale;
+            } else {
+                // 右侧 -> 弹在左边
+                // 坐标 = 按钮左边缘 - 间距 - Tooltip宽度(600)
+                // 注意：renderGenericTip 的 x 是左边缘
+                tipX = activeTooltipBtn.hb.cX - (activeTooltipBtn.hb.width / 2.0f) - 20.0f * Settings.scale - 600.0f * Settings.scale;
+            }
+
+            float tipY = activeTooltipBtn.hb.cY + (activeTooltipBtn.hb.height / 2.0f); // 顶部对齐
+
+            // 调用 InfoTip 的静态方法绘制
+            this.infoTip.renderGenericTip(sb, tipX, tipY, activeTooltipBtn.fullText);
+        }
+
     }
 
     public void checkAns() {
@@ -452,7 +504,7 @@ public class QuizScreen extends CustomScreen {
         QUESTION_CX = 0.5F * Settings.WIDTH;
         QUESTION_CY = 680.0F * Settings.yScale;
         LEXICON_X = QUESTION_CX - 500.0F * Settings.xScale;
-        LEXICON_Y = QUESTION_CY;
+        LEXICON_Y = QUESTION_CY + 100;
         WORD_CX = 0.5F * Settings.WIDTH;
         WORD_CY = 340.0F * Settings.yScale;
         WORD_PAD_CX = 0.305F * FRAME_WIDTH;
