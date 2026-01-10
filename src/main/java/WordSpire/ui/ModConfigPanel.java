@@ -483,8 +483,17 @@ public class ModConfigPanel extends ModPanel {
                 String wKey = "loadUSER_DICT_" + nameNoExt;
                 
                 if (!lexiconData.containsKey(wKey)) lexiconData.put(wKey, 1);
-                if (!config.has(wKey)) config.setString(wKey, "1");
-
+                if (!config.has(wKey)) {
+                    config.setString(wKey, "1");
+                } else {
+                    // 关键：如果配置里有值，必须读出来覆盖默认值
+                    try {
+                        int savedVal = Integer.parseInt(config.getString(wKey));
+                        lexiconData.put(wKey, savedVal);
+                    } catch (NumberFormatException e) {
+                        config.setString(wKey, "1");
+                    }
+                }
                 float wY = y - 70.0F;
                 elementData.put(wKey + "_sub", new ModLabeledButton("-", x, wY, Settings.CREAM_COLOR, Color.WHITE, FontHelper.cardEnergyFont_L, this, (b) -> {
                     lexiconData.put(wKey, Math.max(0, lexiconData.get(wKey) - 1));
