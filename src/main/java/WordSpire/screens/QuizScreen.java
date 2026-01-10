@@ -452,7 +452,7 @@ public class QuizScreen extends CustomScreen {
             }
             w.lockGlowState = true;
             if (w.glowing) {
-                if (this.right_ans_list.contains(w.buttonText)) {
+                if (this.right_ans_list.contains(w.fullText)) {
                     this.right_ans_num++;
                     w.setGlowColor(Color.GREEN.cpy());
                 } else {
@@ -460,7 +460,7 @@ public class QuizScreen extends CustomScreen {
                     this.wrong_ans_num++;
                     w.setGlowColor(Color.RED.cpy());
                 }
-            } else if (this.right_ans_list.contains(w.buttonText)) {
+            } else if (this.right_ans_list.contains(w.fullText)) {
                 // right but not chosen
                 this.isPerfect = false;
                 w.glowing = true;
