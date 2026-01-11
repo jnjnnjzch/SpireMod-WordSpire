@@ -337,8 +337,6 @@ public class QuizScreen extends CustomScreen {
         if (ImageElements.darkMode) {
             font_color = Color.WHITE.cpy();
         }
-        this.renderQuestion(sb, font_color);
-        this.infoTip.render(sb);
         // this.replayButton.render(sb, this.descFont);
         if (this.ans_checked) {
             FontHelper.renderFontLeft(sb, this.descFont, uiStrings.TEXT[2] + this.score,
@@ -349,6 +347,8 @@ public class QuizScreen extends CustomScreen {
             this.checkButton.fontColor = font_color;
             this.checkButton.render(sb);
         }
+        this.renderQuestion(sb, font_color); // 最后绘制问题
+        this.infoTip.render(sb);
     }
 
     @Override
