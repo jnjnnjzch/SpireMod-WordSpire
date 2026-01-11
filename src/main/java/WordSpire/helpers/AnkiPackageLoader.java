@@ -167,7 +167,8 @@ public class AnkiPackageLoader {
         s = s.replace("&nbsp;", " ").replace("&lt;", "<").replace("&gt;", ">")
              .replace("&amp;", "&").replace("&quot;", "\"").replace("&apos;", "'");
         s = s.replaceAll("\\[.*?\\]", ""); // 移除 [abc] 类的注音
-        return s.replaceAll("\\s+", " ").trim(); // 合并多余空格
+        s = s.replaceAll("\\s+", " ");
+        return s.replace(" ", "\u00A0 ").trim(); // 合并多余空格
     }
 
     private static boolean isAudioFile(String name) {
