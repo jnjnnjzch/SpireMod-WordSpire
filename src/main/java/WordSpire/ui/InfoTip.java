@@ -10,6 +10,7 @@ import com.megacrit.cardcrawl.helpers.ImageMaster;
 import com.megacrit.cardcrawl.helpers.TipHelper;
 import com.megacrit.cardcrawl.helpers.controller.CInputHelper;
 
+import WordSpire.helpers.CNFontHelper;
 import WordSpire.helpers.ImageElements;
 import WordSpire.helpers.WordAudioPlayer;
 
@@ -72,19 +73,33 @@ public class InfoTip extends UIButton {
     public void renderTip(SpriteBatch sb) {
         float x = this.current_x;
         float y = this.current_y - IMG_H;
-        renderGenericTip(sb, x, y, TIP_BODY);
+        // renderGenericTip(sb, x, y, TIP_BODY);
+
+        float h = -FontHelper.getSmartHeight(CNFontHelper.pureTipFont, TIP_BODY,
+        BODY_TEXT_WIDTH, TIP_DESC_LINE_SPACING) - 7.0F * Settings.scale;
+        sb.setColor(Color.WHITE);
+        sb.draw(ImageMaster.KEYWORD_TOP, x, y, BOX_W, BOX_EDGE_H);
+        sb.draw(ImageMaster.KEYWORD_BODY, x, y - h - BOX_EDGE_H, BOX_W, h + BOX_EDGE_H);
+        sb.draw(ImageMaster.KEYWORD_BOT, x, y - h - BOX_BODY_H, BOX_W, BOX_EDGE_H);
+        FontHelper.renderSmartText(sb, CNFontHelper.pureTipFont, TIP_BODY,
+                x + TEXT_OFFSET_X, y + BODY_OFFSET_Y,
+                BODY_TEXT_WIDTH, TIP_DESC_LINE_SPACING, Color.WHITE);
     }
 
     public void renderGenericTip(SpriteBatch sb, float x, float y, String text) {
-        float h = -FontHelper.getSmartHeight(FontHelper.tipBodyFont, text,
+        boolean oldLineBreak = Settings.lineBreakViaCharacter;
+        Settings.lineBreakViaCharacter = true;
+        String renderText = text.replace(" ", "\u00A0");
+        float h = -FontHelper.getSmartHeight(CNFontHelper.pureTipFont, renderText,
                 BODY_TEXT_WIDTH, TIP_DESC_LINE_SPACING) - 7.0F * Settings.scale;
         sb.setColor(Color.WHITE);
         sb.draw(ImageMaster.KEYWORD_TOP, x, y, BOX_W, BOX_EDGE_H);
         sb.draw(ImageMaster.KEYWORD_BODY, x, y - h - BOX_EDGE_H, BOX_W, h + BOX_EDGE_H);
         sb.draw(ImageMaster.KEYWORD_BOT, x, y - h - BOX_BODY_H, BOX_W, BOX_EDGE_H);
-        FontHelper.renderSmartText(sb, FontHelper.tipBodyFont, text,
+        FontHelper.renderSmartText(sb, CNFontHelper.pureTipFont, renderText,
                 x + TEXT_OFFSET_X, y + BODY_OFFSET_Y,
                 BODY_TEXT_WIDTH, TIP_DESC_LINE_SPACING, Color.WHITE);
+        Settings.lineBreakViaCharacter = oldLineBreak;
     }
 
     @Override

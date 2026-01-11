@@ -22,6 +22,7 @@ public class CNFontHelper {
     public static BitmapFont charTitleFont;
     public static BitmapFont pureDescFont;
     public static BitmapFont pureTitleFont;
+    public static BitmapFont pureTipFont;
 
     public static void initialize() {
         long startTime = System.currentTimeMillis();
@@ -53,6 +54,9 @@ public class CNFontHelper {
         param.borderGamma = 1.8F;
         param.shadowOffsetX = 0;
         pureTitleFont = prepFont(44.0F, false);
+        param.gamma = 0.9F; 
+        param.borderGamma = 0.9F;
+        pureTipFont = Settings.isMobile ? prepFont(26.0F, false) : prepFont(24.0F, false);
 
         logger.info("Font load time: {}ms", System.currentTimeMillis() - startTime);
     }

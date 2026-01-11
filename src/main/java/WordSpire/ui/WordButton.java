@@ -78,7 +78,8 @@ public class WordButton extends UIButton {
             float paddingX = 20.0F * Settings.scale;
             float textWidth = HB_W - (paddingX * 2);
             float lineSpacing = 30.0F * Settings.scale;
-
+            boolean oldLineBreak = Settings.lineBreakViaCharacter;
+            Settings.lineBreakViaCharacter = true;
             // 计算文字块高度
             float textHeight = FontHelper.getSmartHeight(font, this.buttonText, textWidth, lineSpacing);
             float renderedTextWidth = FontHelper.getSmartWidth(font, buttonText, textHeight, lineSpacing);
@@ -99,8 +100,8 @@ public class WordButton extends UIButton {
                 lineSpacing, 
                 textColor
             );
+            Settings.lineBreakViaCharacter = oldLineBreak;
         }
-
         if (Settings.isDebug) {
             this.hb.render(sb);
         }
